@@ -1,3 +1,4 @@
 [submodule "vendor/pokerbot"]
 	path = vendor/pokerbot
 	url = https://github.com/YosiefAbraham/pokerbot.git
+	branch = main

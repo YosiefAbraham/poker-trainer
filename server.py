@@ -20,6 +20,7 @@ import base64
 import json
 import random
 import sys
+import threading
 import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -40,7 +41,7 @@ def locate_pokerbot():
 sys.path.insert(0, str(locate_pokerbot()))
 
 from bot import TightProfiler                              # noqa: E402
-from bots import CONTESTANTS                                # noqa: E402
+from bots import CONTESTANTS, about                         # noqa: E402
 from opponents import ROSTER                                # noqa: E402
 
 from interactive import Table                                # noqa: E402
@@ -54,15 +55,19 @@ MAX_TOKEN_CHARS = 200_000
 # Every bot a seat can be given: id -> (factory(name, seed) -> instance, description).
 BOT_FACTORIES = {'YOSIEF': (lambda name, seed: TightProfiler(name=name),
                              'Exploitative: profiles every opponent and adapts to them')}
-for kind, (cls, offset, about) in ROSTER.items():
-    BOT_FACTORIES[kind] = (lambda name, seed, cls=cls, offset=offset: cls(name, seed + offset), about)
+for kind, (cls, offset, info) in ROSTER.items():
+    BOT_FACTORIES[kind] = (lambda name, seed, cls=cls, offset=offset: cls(name, seed + offset), info)
+# Every contestant in pokerbot's bots/ folder, so a bot added there shows up here too.
+for kind, cls in CONTESTANTS.items():
+    if kind not in BOT_FACTORIES:
+        BOT_FACTORIES[kind] = (lambda name, seed, cls=cls: cls(name), about(cls))
 
 
 def bot_list():
     """Contestants (full strategies, like YOSIEF and GTO) are 'characters'; the rest of
     the roster are single-style practice bots."""
-    return [{'id': k, 'description': about, 'group': 'character' if k in CONTESTANTS else 'practice'}
-            for k, (_, about) in sorted(BOT_FACTORIES.items())]
+    return [{'id': k, 'description': info, 'group': 'character' if k in CONTESTANTS else 'practice'}
+            for k, (_, info) in sorted(BOT_FACTORIES.items())]
 
 
 class Session:
@@ -106,7 +111,10 @@ def build_session(body):
             continue
         kind = seat_info[name]['bot']
         factory, _ = BOT_FACTORIES[kind]
-        bots[name] = factory(name, 0 if seed is None else seed)
+        try:
+            bots[name] = factory(name, 0 if seed is None else seed)
+        except Exception:
+            raise ValueError(f"{kind} couldn't be seated (the bot raised an error while starting)")
 
     big_blind = int(body.get('big_blind', 100))
     small_blind = int(body.get('small_blind', 50))
@@ -202,20 +210,27 @@ def append_action(token, body):
     return {'spec': token['spec'], 'hands': hands}
 
 
+REPLAY_LOCK = threading.Lock()
+
+
 def play(token):
     """Rebuild the table and replay every hand. Bots are deterministic given the seed."""
     if len(token['hands']) > MAX_HANDS:
         raise ValueError('this table has gone on long enough; start a new one')
-    sess = build_session(token['spec'])
-    result = None
-    for actions in token['hands']:
-        if len(actions) > MAX_ACTIONS:
-            raise ValueError('too many actions this hand')
-        result = sess.table.new_hand()
-        for recorded in actions:
-            if result['status'] != 'acting':
-                raise ValueError('no action is pending')
-            result = sess.table.act(as_action(recorded))
+    # Bots that use the shared `random` module must draw the same numbers on every replay,
+    # so seed it per table and keep other requests from drawing from it mid-replay.
+    with REPLAY_LOCK:
+        random.seed(token['spec'].get('seed'))
+        sess = build_session(token['spec'])
+        result = None
+        for actions in token['hands']:
+            if len(actions) > MAX_ACTIONS:
+                raise ValueError('too many actions this hand')
+            result = sess.table.new_hand()
+            for recorded in actions:
+                if result['status'] != 'acting':
+                    raise ValueError('no action is pending')
+                result = sess.table.act(as_action(recorded))
     if result is None:
         raise ValueError('unknown or expired session')
     return sess, result

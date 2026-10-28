@@ -13,6 +13,13 @@ directly, so there's one source of truth for every bot's logic. A sibling
 a Git submodule of [YosiefAbraham/pokerbot](https://github.com/YosiefAbraham/pokerbot),
 which is how the Vercel deploy finds the bots.
 
+Every bot pokerbot has is offered here: its practice bots (`opponents.ROSTER`) and every
+contestant in its `bots/` folder, so a new bot file there shows up without code changes.
+The **Sync pokerbot** GitHub Action moves `vendor/pokerbot` to pokerbot's latest `main`
+every hour (or on demand from the Actions tab), runs `smoke_test.py` to make sure every
+bot can sit down, play and replay a hand, and pushes, which redeploys the site. If a bot
+fails the check, the update isn't pushed and the site stays on the last good version.
+
 ## Quick start
 
 No dependencies beyond the Python standard library. Locally, keep a `pokerbot`
