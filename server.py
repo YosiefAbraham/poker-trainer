@@ -290,23 +290,41 @@ class Handler(BaseHTTPRequestHandler):
         print(f'{self.address_string()} {fmt % args}')
 
 
-def app(environ, start_response):
-    """WSGI entrypoint used by Vercel."""
-    method = environ.get('REQUEST_METHOD', 'GET')
-    path = environ.get('PATH_INFO') or '/'
-    query = environ.get('QUERY_STRING', '')
-    try:
-        length = int(environ.get('CONTENT_LENGTH') or 0)
-    except ValueError:
-        length = 0
-    body = environ['wsgi.input'].read(length) if length else b''
-    code, ctype, payload = dispatch(method, path, query, body)
-    reason = {200: 'OK', 400: 'Bad Request', 404: 'Not Found'}.get(code, 'Error')
-    start_response(f'{code} {reason}', [
-        ('Content-Type', ctype),
-        ('Content-Length', str(len(payload))),
-    ])
-    return [payload]
+try:
+    from flask import Flask, Response, request
+except ImportError:  # local `python server.py` does not need Flask installed
+    Flask = None
+
+if Flask is not None:
+    # Vercel detects this Flask app and routes every request to it.
+    app = Flask(__name__, static_folder=None)
+
+    @app.route('/', defaults={'path': ''}, methods=['GET', 'POST'])
+    @app.route('/<path:path>', methods=['GET', 'POST'])
+    def wsgi_entry(path):
+        code, ctype, payload = dispatch(request.method, request.path,
+                                        request.query_string.decode(), request.get_data())
+        resp = Response(payload, status=code)
+        resp.headers['Content-Type'] = ctype
+        return resp
+else:
+    def app(environ, start_response):
+        """WSGI entrypoint, used when Flask is not installed."""
+        method = environ.get('REQUEST_METHOD', 'GET')
+        path = environ.get('PATH_INFO') or '/'
+        query = environ.get('QUERY_STRING', '')
+        try:
+            length = int(environ.get('CONTENT_LENGTH') or 0)
+        except ValueError:
+            length = 0
+        body = environ['wsgi.input'].read(length) if length else b''
+        code, ctype, payload = dispatch(method, path, query, body)
+        reason = {200: 'OK', 400: 'Bad Request', 404: 'Not Found'}.get(code, 'Error')
+        start_response(f'{code} {reason}', [
+            ('Content-Type', ctype),
+            ('Content-Length', str(len(payload))),
+        ])
+        return [payload]
 
 
 def main():

@@ -3,7 +3,10 @@ name = "poker-trainer"
 version = "0.1.0"
 description = "Play no-limit hold'em hands in the browser against the pokerbot bots"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["flask>=3.0"]
 
 [tool.vercel]
 entrypoint = "server:app"
+
+[tool.vercel.scripts]
+build = "python build.py"
