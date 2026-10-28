@@ -40,6 +40,7 @@ def locate_pokerbot():
 sys.path.insert(0, str(locate_pokerbot()))
 
 from bot import TightProfiler                              # noqa: E402
+from bots import CONTESTANTS                                # noqa: E402
 from opponents import ROSTER                                # noqa: E402
 
 from interactive import Table                                # noqa: E402
@@ -58,7 +59,10 @@ for kind, (cls, offset, about) in ROSTER.items():
 
 
 def bot_list():
-    return [{'id': k, 'description': about} for k, (_, about) in sorted(BOT_FACTORIES.items())]
+    """Contestants (full strategies, like YOSIEF and GTO) are 'characters'; the rest of
+    the roster are single-style practice bots."""
+    return [{'id': k, 'description': about, 'group': 'character' if k in CONTESTANTS else 'practice'}
+            for k, (_, about) in sorted(BOT_FACTORIES.items())]
 
 
 class Session:

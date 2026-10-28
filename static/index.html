@@ -241,8 +241,13 @@ function renderSeatRows() {
     const idx = document.createElement('div');
     idx.className = 'idx'; idx.textContent = 'Seat ' + (i + 1);
     const sel = document.createElement('select');
+    const group = (label, kind) => {
+      const bots = botList.filter(b => (b.group || 'practice') === kind);
+      return bots.length ? `<optgroup label="${label}">` +
+        bots.map(b => `<option value="${b.id}">${b.id}</option>`).join('') + '</optgroup>' : '';
+    };
     sel.innerHTML = '<option value="human">You</option>' +
-      botList.map(b => `<option value="${b.id}">${b.id}</option>`).join('') +
+      group('Characters', 'character') + group('Practice bots', 'practice') +
       '<option value="">(empty)</option>';
     sel.value = prev[i] !== undefined ? prev[i] : (i === 0 ? 'human' : (botList[i % botList.length] || {}).id || '');
     const desc = document.createElement('div');
