@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poker Trainer</title>
+<style>
+  :root {
+    --bg: #0f1724; --panel: #17233a; --panel2: #1e2d4a; --text: #e8edf6; --muted: #92a1ba;
+    --accent: #3fb97e; --accent2: #e0b94a; --danger: #d9534f; --felt: #0b3d2e; --felt2: #0e4f3a;
+    --border: #2a3a58; --card-bg: #f6f3ea; --card-text: #222; --red: #c0392b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#eef1f6; --panel:#fff; --panel2:#f3f5f9; --text:#1b2433; --muted:#5a6b85;
+      --border:#dbe2ee; --felt:#0e5c42; --felt2:#127a56; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  header { padding:14px 20px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--border); }
+  header h1 { font-size:17px; margin:0; font-weight:700; }
+  header span { color:var(--muted); font-size:13px; }
+  main { max-width: 1040px; margin: 0 auto; padding: 20px; }
+  .card-panel { background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:20px; margin-bottom:16px; }
+  h2 { margin:0 0 14px; font-size:15px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  label { display:block; font-size:13px; color:var(--muted); margin-bottom:4px; }
+  input, select { width:100%; background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:8px 10px; font-size:14px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:120px; margin-bottom:10px; }
+  button { cursor:pointer; border:none; border-radius:8px; padding:10px 16px; font-size:14px;
+    font-weight:600; background:var(--accent); color:#06281a; }
+  button.secondary { background:var(--panel2); color:var(--text); border:1px solid var(--border); }
+  button.danger { background:var(--danger); color:#fff; }
+  button:disabled { opacity:.45; cursor:default; }
+  button.ghost { background:transparent; border:1px solid var(--border); color:var(--text); padding:6px 10px; font-weight:500; }
+
+  #seat-rows { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+  .seat-row { display:grid; grid-template-columns: 70px 1fr 1fr; gap:10px; align-items:center; }
+  .seat-row .idx { color:var(--muted); font-size:13px; }
+  .err { color:var(--danger); font-size:13px; margin-top:8px; min-height:18px; }
+
+  #table-screen { display:none; }
+  .table-wrap { display:flex; gap:20px; align-items:flex-start; }
+  .felt-outer { position:relative; width:640px; height:420px; flex:0 0 auto; }
+  .felt { position:absolute; inset:0; border-radius:300px / 220px; background:
+      radial-gradient(ellipse at 50% 40%, var(--felt2), var(--felt)); border:10px solid #3a2415;
+      box-shadow: inset 0 0 60px rgba(0,0,0,.5); }
+  .center { position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); text-align:center; }
+  .board { display:flex; gap:6px; justify-content:center; min-height:58px; }
+  .pot { margin-top:8px; color:var(--accent2); font-weight:700; font-size:14px; }
+  .seat { position:absolute; width:128px; transform:translate(-50%,-50%); text-align:center; }
+  .seat .plate { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:6px 8px;
+    font-size:12.5px; position:relative; }
+  .seat.folded .plate { opacity:.4; }
+  .seat.active .plate { border-color:var(--accent); box-shadow:0 0 0 2px rgba(63,185,126,.35); }
+  .seat .name { font-weight:700; }
+  .seat .pos { color:var(--muted); font-size:11px; }
+  .seat .stack { color:var(--accent2); font-size:12px; }
+  .seat .bet { position:absolute; top:-18px; left:50%; transform:translate(-50%,0); background:var(--panel2);
+    border:1px solid var(--border); border-radius:10px; padding:2px 8px; font-size:11px; color:var(--text); }
+  .seat .btn-marker { position:absolute; top:-8px; right:-8px; background:var(--accent2); color:#2b2200;
+    border-radius:50%; width:18px; height:18px; font-size:11px; display:flex; align-items:center;
+    justify-content:center; font-weight:800; }
+  .hole { display:flex; gap:4px; justify-content:center; margin-top:4px; }
+
+  .pc { display:inline-flex; align-items:center; justify-content:center; width:34px; height:46px;
+    background:var(--card-bg); color:var(--card-text); border-radius:6px; font-weight:800; font-size:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,.4); }
+  .pc.red { color:var(--red); }
+  .pc.sm { width:26px; height:36px; font-size:13px; }
+  .pc.back { background:linear-gradient(135deg,#345,#123); color:transparent; }
+
+  .side { flex:1; min-width:260px; display:flex; flex-direction:column; gap:14px; }
+  .log { height:170px; overflow-y:auto; font-size:12.5px; color:var(--muted); display:flex;
+    flex-direction:column; gap:2px; }
+  .log b { color:var(--text); }
+
+  .controls { display:flex; flex-direction:column; gap:10px; }
+  .controls .main-actions { display:flex; gap:8px; }
+  .controls .main-actions button { flex:1; font-size:15px; padding:12px; }
+  .raise-row { display:flex; gap:8px; align-items:center; }
+  .raise-row input { width:110px; }
+  .quick { display:flex; gap:6px; flex-wrap:wrap; }
+
+  .summary h3 { margin:0 0 6px; font-size:14px; }
+  .net-pos { color:var(--accent); } .net-neg { color:var(--danger); }
+  .classes { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .pill { background:var(--panel2); border:1px solid var(--border); border-radius:14px; padding:4px 10px;
+    font-size:12px; }
+
+  footer { text-align:center; color:var(--muted); font-size:12px; padding:20px; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Poker Trainer</h1>
+  <span id="header-sub">Play hands against pokerbot's bots</span>
+</header>
+<main>
+
+<section id="setup-screen">
+  <div class="card-panel">
+    <h2>Table</h2>
+    <div class="row">
+      <div><label>Seats (2-8)</label><input id="seat-count" type="number" min="2" max="8" value="6"></div>
+      <div><label>Starting stack</label><input id="stack" type="number" min="100" step="100" value="10000"></div>
+      <div><label>Small blind</label><input id="sb" type="number" min="1" value="50"></div>
+      <div><label>Big blind</label><input id="bb" type="number" min="2" value="100"></div>
+    </div>
+    <div class="row">
+      <div><label><input id="carry" type="checkbox" style="width:auto" checked> carry stacks between hands (100% rebuy)</label></div>
+    </div>
+  </div>
+
+  <div class="card-panel">
+    <h2>Who's sitting</h2>
+    <div id="seat-rows"></div>
+    <div class="err" id="setup-err"></div>
+    <button id="start-btn">Start table</button>
+  </div>
+</section>
+
+<section id="table-screen">
+  <div class="table-wrap">
+    <div class="felt-outer">
+      <div class="felt"></div>
+      <div class="center">
+        <div class="board" id="board"></div>
+        <div class="pot" id="pot"></div>
+      </div>
+      <div id="seats"></div>
+    </div>
+    <div class="side">
+      <div class="card-panel" style="margin-bottom:0;">
+        <h2>Action log</h2>
+        <div class="log" id="log"></div>
+      </div>
+      <div class="card-panel" id="action-panel" style="margin-bottom:0;">
+        <h2>Your hand</h2>
+        <div class="hole" id="my-hole"></div>
+        <div class="controls" id="controls" style="margin-top:12px;"></div>
+      </div>
+      <div class="card-panel" id="summary-panel" style="display:none; margin-bottom:0;"></div>
+    </div>
+  </div>
+  <div style="margin-top:14px;"><button class="secondary" id="leave-btn">Leave table</button></div>
+</section>
+
+</main>
+<footer>Local practice tool. Bots and game logic come from the pokerbot project; nothing here is a commercial solver.</footer>
+
+<script>
+const RANK_ORDER = '23456789TJQKA';
+const SUITS = {c:'♣', d:'♦', h:'♥', s:'♠'};
+const RED_SUITS = new Set(['d','h']);
+
+function cardEl(card, size) {
+  const span = document.createElement('span');
+  span.className = 'pc' + (size === 'sm' ? ' sm' : '') + (RED_SUITS.has(card[1]) ? ' red' : '');
+  span.textContent = card[0] + SUITS[card[1]];
+  return span;
+}
+function cardBack(size) {
+  const span = document.createElement('span');
+  span.className = 'pc back' + (size === 'sm' ? ' sm' : '');
+  span.textContent = '??';
+  return span;
+}
+function fmt(n) { return n.toLocaleString(); }
+
+let session = null, seatOrder = [], humanName = 'YOU', lastSeen = {};
+
+const setupScreen = document.getElementById('setup-screen');
+const tableScreen = document.getElementById('table-screen');
+
+async function api(path, body) {
+  const opts = body === undefined ? {} : { method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body) };
+  const res = await fetch(path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'request failed');
+  return data;
+}
+
+// ---------- setup screen ----------
+let botList = [];
+function renderSeatRows() {
+  const n = Math.max(2, Math.min(8, parseInt(document.getElementById('seat-count').value) || 6));
+  const wrap = document.getElementById('seat-rows');
+  const prev = [...wrap.querySelectorAll('select')].map(s => s.value);
+  wrap.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const row = document.createElement('div');
+    row.className = 'seat-row';
+    const idx = document.createElement('div');
+    idx.className = 'idx'; idx.textContent = 'Seat ' + (i + 1);
+    const sel = document.createElement('select');
+    sel.innerHTML = '<option value="human">You</option>' +
+      botList.map(b => `<option value="${b.id}">${b.id}</option>`).join('') +
+      '<option value="">(empty)</option>';
+    sel.value = prev[i] !== undefined ? prev[i] : (i === 0 ? 'human' : (botList[i % botList.length] || {}).id || '');
+    const desc = document.createElement('div');
+    desc.style.color = 'var(--muted)'; desc.style.fontSize = '12px';
+    function updateDesc() {
+      if (sel.value === 'human') desc.textContent = 'you play this seat';
+      else if (!sel.value) desc.textContent = 'bench';
+      else desc.textContent = (botList.find(b => b.id === sel.value) || {}).description || '';
+    }
+    sel.addEventListener('change', updateDesc);
+    updateDesc();
+    row.append(idx, sel, desc);
+    wrap.appendChild(row);
+  }
+}
+
+document.getElementById('seat-count').addEventListener('input', renderSeatRows);
+
+async function initSetup() {
+  const data = await api('/api/bots');
+  botList = data.bots;
+  renderSeatRows();
+}
+
+document.getElementById('start-btn').addEventListener('click', async () => {
+  const err = document.getElementById('setup-err');
+  err.textContent = '';
+  const seats = [...document.querySelectorAll('#seat-rows select')].map(sel => {
+    if (sel.value === 'human') return { kind: 'human' };
+    if (!sel.value) return { kind: 'empty' };
+    return { kind: 'bot', bot: sel.value };
+  });
+  const body = {
+    seats,
+    stack: parseInt(document.getElementById('stack').value),
+    small_blind: parseInt(document.getElementById('sb').value),
+    big_blind: parseInt(document.getElementById('bb').value),
+    carry: document.getElementById('carry').checked,
+  };
+  try {
+    const data = await api('/api/table', body);
+    onTableUpdate(data, true);
+  } catch (e) {
+    err.textContent = e.message;
+  }
+});
+
+document.getElementById('leave-btn').addEventListener('click', () => {
+  session = null;
+  tableScreen.style.display = 'none';
+  setupScreen.style.display = 'block';
+});
+
+// ---------- table screen ----------
+function seatLabel(s) {
+  if (s.kind === 'human') return 'You';
+  return s.bot + (s.name !== s.bot ? ' (' + s.name.split('-')[1] + ')' : '');
+}
+
+function layoutSeats(seats) {
+  const human = seats.find(s => s.name === humanName);
+  const rest = seats.filter(s => s.name !== humanName);
+  const ordered = [human, ...rest];
+  const n = ordered.length;
+  const cx = 320, cy = 190, rx = 270, ry = 150;
+  return ordered.map((s, i) => {
+    const theta = (Math.PI / 2) + i * (2 * Math.PI / n);
+    return { seat: s, x: cx + rx * Math.cos(theta), y: cy + ry * Math.sin(theta) };
+  });
+}
+
+function renderLog(history) {
+  const log = document.getElementById('log');
+  log.innerHTML = '';
+  const VERB = {blind:'posts', fold:'folds', check:'checks', call:'calls', bet:'bets', raise:'raises to'};
+  for (const e of history) {
+    const div = document.createElement('div');
+    const amt = (e.kind === 'raise') ? fmt(e.to) : fmt(e.amount);
+    div.innerHTML = `<b>${e.player}</b> ${VERB[e.kind]} ${e.kind === 'fold' || e.kind === 'check' ? '' : amt}` +
+      ` <span style="opacity:.6">· ${e.street}</span>`;
+    log.appendChild(div);
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
+function renderBoard(boardStr) {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  const cards = boardStr ? boardStr.match(/.{2}/g) : [];
+  for (const c of cards) board.appendChild(cardEl(c));
+  for (let i = cards.length; i < 5; i++) {
+    const ph = document.createElement('span');
+    ph.className = 'pc'; ph.style.background = 'rgba(255,255,255,.08)'; ph.style.boxShadow = 'none';
+    ph.textContent = '';
+    board.appendChild(ph);
+  }
+}
+
+function render(data) {
+  const seats = data.seats;
+  seatOrder = seats;
+  const acting = data.status === 'acting';
+  const live = acting ? data.state : data.summary;
+  renderBoard(live.board ? live.board.join ? live.board.join('') : live.board : '');
+  document.getElementById('pot').textContent = 'Pot: ' + fmt(live.pot);
+
+  const stacks = live.stacks || {};
+  const bets = acting ? (live.bets || {}) : {};
+  const positions = live.positions || {};
+  const folded = new Set((live.history || []).filter(e => e.kind === 'fold').map(e => e.player));
+
+  const seatsEl = document.getElementById('seats');
+  seatsEl.innerHTML = '';
+  for (const { seat, x, y } of layoutSeats(seats)) {
+    const div = document.createElement('div');
+    div.className = 'seat' + (folded.has(seat.name) ? ' folded' : '') +
+      (acting && live.position !== undefined && seat.name === currentActorName(data) ? ' active' : '');
+    div.style.left = x + 'px'; div.style.top = y + 'px';
+    const stack = stacks[seat.name] !== undefined ? stacks[seat.name] : seat.stack;
+    div.innerHTML = `<div class="plate">
+        ${seat.name === data.button_name ? '' : ''}
+        <div class="name">${seatLabel(seat)}</div>
+        <div class="pos">${positions[seat.name] || ''}</div>
+        <div class="stack">${fmt(stack)}</div>
+      </div>`;
+    if (bets[seat.name]) {
+      const bet = document.createElement('div');
+      bet.className = 'bet'; bet.textContent = fmt(bets[seat.name]);
+      div.querySelector('.plate').appendChild(bet);
+    }
+    if (seats[data.button] && seats[data.button].name === seat.name) {
+      const bm = document.createElement('div');
+      bm.className = 'btn-marker'; bm.textContent = 'D';
+      div.querySelector('.plate').appendChild(bm);
+    }
+    if (!acting && live.shown && live.shown[seat.name]) {
+      const hole = document.createElement('div');
+      hole.className = 'hole';
+      for (const c of live.shown[seat.name].match(/.{2}/g)) hole.appendChild(cardEl(c, 'sm'));
+      div.appendChild(hole);
+    }
+    seatsEl.appendChild(div);
+  }
+
+  renderLog(live.history || []);
+
+  const myHole = document.getElementById('my-hole');
+  myHole.innerHTML = '';
+  const holeStr = acting ? (live.hole || []).join('') : live.human_hole;
+  if (holeStr) for (const c of holeStr.match(/.{2}/g)) myHole.appendChild(cardEl(c));
+
+  document.getElementById('summary-panel').style.display = acting ? 'none' : '';
+  document.getElementById('action-panel').style.display = acting ? '' : 'none';
+  if (acting) renderControls(live); else renderSummary(data.summary);
+}
+
+function currentActorName() { return humanName; } // controls only ever shown for the human's own turn
+
+function renderControls(state) {
+  const el = document.getElementById('controls');
+  el.innerHTML = '';
+  const main = document.createElement('div');
+  main.className = 'main-actions';
+
+  const foldBtn = document.createElement('button');
+  foldBtn.className = 'danger'; foldBtn.textContent = 'Fold';
+  foldBtn.onclick = () => sendAction({ kind: 'fold' });
+
+  const callBtn = document.createElement('button');
+  callBtn.className = 'secondary';
+  callBtn.textContent = state.to_call > 0 ? `Call ${fmt(state.to_call)}` : 'Check';
+  callBtn.onclick = () => sendAction({ kind: state.to_call > 0 ? 'call' : 'check' });
+
+  main.append(foldBtn, callBtn);
+  el.appendChild(main);
+
+  const canRaise = state.max_raise_to > (state.committed + state.to_call);
+  if (canRaise) {
+    const raiseRow = document.createElement('div');
+    raiseRow.className = 'raise-row';
+    const input = document.createElement('input');
+    input.type = 'number'; input.min = state.min_raise_to; input.max = state.max_raise_to;
+    input.value = state.min_raise_to; input.id = 'raise-amount';
+    const btn = document.createElement('button');
+    btn.textContent = state.to_call > 0 ? 'Raise to' : 'Bet to';
+    btn.onclick = () => sendAction({ kind: 'raise', to: parseInt(input.value) || state.min_raise_to });
+    raiseRow.append(btn, input);
+    el.appendChild(raiseRow);
+
+    const quick = document.createElement('div');
+    quick.className = 'quick';
+    const pot = state.pot + state.to_call;
+    const sizes = [['1/2 pot', 0.5], ['Pot', 1], ['2x Pot', 2]];
+    for (const [label, frac] of sizes) {
+      const b = document.createElement('button');
+      b.className = 'ghost'; b.textContent = label;
+      const to = Math.min(state.max_raise_to, state.committed + state.to_call + Math.round(frac * pot));
+      b.onclick = () => { input.value = Math.max(to, state.min_raise_to); };
+      quick.appendChild(b);
+    }
+    const allIn = document.createElement('button');
+    allIn.className = 'ghost'; allIn.textContent = 'All in';
+    allIn.onclick = () => { input.value = state.max_raise_to; };
+    quick.appendChild(allIn);
+    el.appendChild(quick);
+  }
+}
+
+function renderSummary(summary) {
+  const el = document.getElementById('summary-panel');
+  const net = summary.nets[humanName] || 0;
+  const netClass = net > 0 ? 'net-pos' : (net < 0 ? 'net-neg' : '');
+  let shownHtml = '';
+  for (const [name, cards] of Object.entries(summary.shown || {})) {
+    if (name === humanName) continue;
+    shownHtml += `<div><b>${name}</b>: ${cards}</div>`;
+  }
+  const classesHtml = (summary.classes || []).map(c =>
+    `<span class="pill">${c.street}: ${c.class}</span>`).join('');
+  el.innerHTML = `
+    <h2>Hand result</h2>
+    <h3 class="${netClass}">${net >= 0 ? '+' : ''}${fmt(net)} chips</h3>
+    ${shownHtml ? '<div style="margin:8px 0;">' + shownHtml + '</div>' : ''}
+    ${classesHtml ? '<div class="classes">' + classesHtml + '</div>' : ''}
+    <button id="next-hand-btn" style="margin-top:14px; width:100%;">Next hand</button>
+  `;
+  document.getElementById('next-hand-btn').onclick = nextHand;
+}
+
+async function sendAction(action) {
+  try {
+    const data = await api('/api/act', { session, ...action });
+    onTableUpdate(data);
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+async function nextHand() {
+  try {
+    const data = await api('/api/next_hand', { session });
+    onTableUpdate(data);
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function onTableUpdate(data, firstTime) {
+  session = data.session || session;
+  humanName = data.human || humanName;
+  if (firstTime) {
+    setupScreen.style.display = 'none';
+    tableScreen.style.display = 'block';
+  }
+  render(data);
+}
+
+initSetup();
+</script>
+</body>
+</html>
