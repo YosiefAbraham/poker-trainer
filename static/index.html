@@ -4,163 +4,304 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Poker Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0f1724; --panel: #17233a; --panel2: #1e2d4a; --text: #e8edf6; --muted: #92a1ba;
-    --accent: #3fb97e; --accent2: #e0b94a; --danger: #d9534f; --felt: #0b3d2e; --felt2: #0e4f3a;
-    --border: #2a3a58; --card-bg: #f6f3ea; --card-text: #222; --red: #c0392b;
-  }
-  @media (prefers-color-scheme: light) {
-    :root { --bg:#eef1f6; --panel:#fff; --panel2:#f3f5f9; --text:#1b2433; --muted:#5a6b85;
-      --border:#dbe2ee; --felt:#0e5c42; --felt2:#127a56; }
+    color-scheme: dark;
+    --bg: #000; --text: #fff; --muted: #9f9f9f; --dim: #575757; --line: #222; --line2: #333;
+    --red: #f64039; --cyan: #28afd5;
+    --accent: var(--cyan); --danger: var(--red); --border: var(--line2);
+    --sans: "Space Grotesk", "Helvetica Neue", sans-serif;
+    --mono: "Space Mono", ui-monospace, Menlo, monospace;
+    --gutter: clamp(20px, 3vw, 40px);
   }
   * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--text);
-    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  header { padding:14px 20px; display:flex; align-items:center; justify-content:space-between;
-    border-bottom:1px solid var(--border); }
-  header h1 { font-size:17px; margin:0; font-weight:700; }
-  header span { color:var(--muted); font-size:13px; }
-  main { max-width: 1040px; margin: 0 auto; padding: 20px; }
-  .card-panel { background:var(--panel); border:1px solid var(--border); border-radius:12px;
-    padding:20px; margin-bottom:16px; }
-  h2 { margin:0 0 14px; font-size:15px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
-  label { display:block; font-size:13px; color:var(--muted); margin-bottom:4px; }
-  input, select { width:100%; background:var(--panel2); border:1px solid var(--border); color:var(--text);
-    border-radius:8px; padding:8px 10px; font-size:14px; }
-  .row { display:flex; gap:12px; flex-wrap:wrap; }
-  .row > div { flex:1; min-width:120px; margin-bottom:10px; }
-  button { cursor:pointer; border:none; border-radius:8px; padding:10px 16px; font-size:14px;
-    font-weight:600; background:var(--accent); color:#06281a; }
-  button.secondary { background:var(--panel2); color:var(--text); border:1px solid var(--border); }
-  button.danger { background:var(--danger); color:#fff; }
-  button:disabled { opacity:.45; cursor:default; }
-  button.ghost { background:transparent; border:1px solid var(--border); color:var(--text); padding:6px 10px; font-weight:500; }
+  html { background: var(--bg); }
+  body { margin:0; background:var(--bg); color:var(--text); font: 16px/1.5 var(--sans);
+    -webkit-font-smoothing: antialiased; }
+  ::selection { background: var(--red); color: #000; }
+  a { color: inherit; }
+  [id] { scroll-margin-top: 72px; }
 
-  #seat-rows { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
-  .seat-row { display:grid; grid-template-columns: 70px 1fr 1fr; gap:10px; align-items:center; }
-  .seat-row .idx { color:var(--muted); font-size:13px; }
-  .err { color:var(--danger); font-size:13px; margin-top:8px; min-height:18px; }
+  /* ---------- nav ---------- */
+  .nav { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:28px;
+    padding:14px var(--gutter); background:rgba(0,0,0,.86); backdrop-filter: blur(8px);
+    border-bottom:1px solid var(--line); }
+  .brand { display:flex; align-items:center; gap:10px; text-decoration:none; font-size:19px;
+    letter-spacing:-.02em; }
+  .brand-mark { width:22px; height:22px; border:1.5px solid var(--text); display:grid; place-items:center;
+    flex:0 0 auto; }
+  .brand-mark svg { width:62%; height:62%; display:block; }
+  .nav-links { display:flex; gap:22px; }
+  .nav-link { font: italic 14px var(--mono); letter-spacing:-.03em; color:var(--text); text-decoration:none;
+    text-underline-offset:.3em; }
+  .nav-link:hover { text-decoration: underline; }
+  .nav-right { margin-left:auto; display:flex; align-items:center; gap:22px; }
+  .table-only { display:none; }
+  body.at-table .table-only { display:revert; }
 
+  main { padding: 0 var(--gutter); max-width: 1320px; margin: 0 auto; }
+
+  /* ---------- type ---------- */
+  .eyebrow { font: 13px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 18px; display:flex; gap:14px; align-items:baseline; }
+  .eyebrow .n { color:var(--red); }
+  h1.display { font-weight:300; font-size:clamp(44px, 6.4vw, 92px); line-height:1; letter-spacing:-.035em;
+    margin:0 0 24px; }
+  h1.display em { font-style:normal; color:var(--red); }
+  .lede { color:var(--muted); font-size:18px; max-width:30em; margin:0; }
+  .mono { font-family: var(--mono); }
+  .net-pos { color:var(--cyan); } .net-neg { color:var(--red); }
+
+  /* ---------- buttons & fields ---------- */
+  button { cursor:pointer; font: italic 14px/1 var(--mono); letter-spacing:-.02em; color:var(--text);
+    background:transparent; border:1px solid var(--text); border-radius:0; padding:1em 1.5em;
+    transition: background .12s, color .12s, border-color .12s; }
+  button:hover { background:var(--text); color:#000; }
+  button:disabled { opacity:.35; cursor:default; }
+  button.primary { border-color:var(--red); color:var(--red); }
+  button.primary:hover { background:var(--red); color:#000; }
+  button.solid { background:var(--text); color:#000; }
+  button.solid:hover { background:var(--red); border-color:var(--red); }
+  button.fill-red { background:var(--red); border-color:var(--red); color:#000; }
+  button.fill-red:hover { background:var(--text); border-color:var(--text); }
+  button.secondary { border-color:var(--line2); color:var(--muted); }
+  button.secondary:hover { border-color:var(--text); color:#000; }
+  button.ghost { border-color:var(--line2); color:var(--muted); padding:.6em .9em; font-size:12.5px; }
+  button.ghost:hover { border-color:var(--text); }
+  button .key { font-style:normal; font-size:10.5px; opacity:.55; margin-right:.6em; border:1px solid currentColor;
+    padding:1px 4px; }
+  label { display:block; font: 12px var(--mono); letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:8px; }
+  input, select { width:100%; background:transparent; color:var(--text); border:0; border-bottom:1px solid var(--line2);
+    border-radius:0; padding:8px 0; font: 18px var(--mono); outline:none; }
+  input:focus, select:focus { border-bottom-color:var(--red); }
+  select { appearance:none; cursor:pointer; padding-right:22px;
+    background: linear-gradient(45deg, transparent 50%, var(--muted) 50%) right 6px center / 6px 6px no-repeat,
+                linear-gradient(-45deg, transparent 50%, var(--muted) 50%) right 0 center / 6px 6px no-repeat; }
+  select option, select optgroup { background:#0b0b0b; color:var(--text); font-family: var(--mono); }
+  input[type=checkbox] { width:auto; accent-color: var(--red); margin:0 10px 0 0; }
+  .check { display:flex; align-items:center; font: 14px var(--mono); color:var(--muted); text-transform:none;
+    letter-spacing:0; cursor:pointer; }
+
+  /* ---------- sections ---------- */
+  .block { border-top:1px solid var(--line); padding:44px 0; }
+  .block-head { display:flex; justify-content:space-between; align-items:baseline; gap:16px; }
+  .block-head .total { font: 14px var(--mono); }
+
+  /* ---------- setup ---------- */
+  .hero { display:grid; grid-template-columns: 1.15fr .85fr; gap:40px; align-items:center;
+    min-height: min(68vh, 620px); padding: 40px 0 56px; }
+  .hero-art svg { width:100%; max-width:440px; height:auto; display:block; margin-left:auto; }
+  .fields { display:grid; grid-template-columns: repeat(4, 1fr); gap:32px; margin-bottom:28px; }
+  #seat-rows { display:flex; flex-direction:column; margin-bottom:32px; border-top:1px solid var(--line); }
+  .seat-row { display:grid; grid-template-columns: 90px minmax(180px, 320px) 1fr; gap:24px; align-items:center;
+    padding:12px 0; border-bottom:1px solid var(--line); }
+  .seat-row .idx { font: 13px var(--mono); color:var(--dim); letter-spacing:.08em; }
+  .seat-row select { border-bottom-color:transparent; font-size:16px; }
+  .seat-row select:hover, .seat-row select:focus { border-bottom-color:var(--line2); }
+  .seat-row .desc { color:var(--muted); font-size:14px; }
+  .start-row { display:flex; align-items:center; gap:24px; }
+  .err { color:var(--red); font: 13px var(--mono); }
+
+  /* ---------- table ---------- */
   #table-screen { display:none; }
-  .table-wrap { display:flex; gap:20px; align-items:flex-start; }
-  .felt-outer { position:relative; width:640px; height:420px; flex:0 0 auto; }
-  .felt { position:absolute; inset:0; border-radius:300px / 220px; background:
-      radial-gradient(ellipse at 50% 40%, var(--felt2), var(--felt)); border:10px solid #3a2415;
-      box-shadow: inset 0 0 60px rgba(0,0,0,.5); }
-  .center { position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); text-align:center; }
+  .table-wrap { display:grid; grid-template-columns: 640px 1fr; gap:48px; padding:40px 0 48px; align-items:start; }
+  .felt-outer { position:relative; width:640px; height:420px; }
+  .felt { position:absolute; inset:18px 8px; border-radius:50%; border:1px solid var(--line2);
+    background:
+      radial-gradient(circle, rgba(246,64,57,.55) 1px, transparent 1.6px) 0 0 / 9px 9px;
+    -webkit-mask-image: radial-gradient(ellipse at center, transparent 42%, #000 92%);
+            mask-image: radial-gradient(ellipse at center, transparent 42%, #000 92%); }
+  .felt::after { content:''; position:absolute; inset:34px 46px; border-radius:50%; border:1px dashed #2a2a2a; }
+  .felt-glow { position:absolute; inset:18px 8px; border-radius:50%; pointer-events:none;
+    background: radial-gradient(ellipse at 50% 46%, rgba(40,175,213,.10), transparent 60%); }
+  .center { position:absolute; left:50%; top:44%; transform:translate(-50%,-50%); text-align:center; }
   .board { display:flex; gap:6px; justify-content:center; min-height:58px; }
-  .pot { margin-top:8px; color:var(--accent2); font-weight:700; font-size:14px; }
-  .seat { position:absolute; width:128px; transform:translate(-50%,-50%); text-align:center; }
-  .seat .plate { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:6px 8px;
-    font-size:12.5px; position:relative; }
-  .seat.folded .plate { opacity:.4; }
-  .seat.active .plate { border-color:var(--accent); box-shadow:0 0 0 2px rgba(63,185,126,.35); }
-  .seat .name { font-weight:700; }
-  .seat .pos { color:var(--muted); font-size:11px; }
-  .seat .stack { color:var(--accent2); font-size:12px; }
-  .seat .bet { position:absolute; top:-18px; left:50%; transform:translate(-50%,0); background:var(--panel2);
-    border:1px solid var(--border); border-radius:10px; padding:2px 8px; font-size:11px; color:var(--text); }
-  .seat .btn-marker { position:absolute; top:-8px; right:-8px; background:var(--accent2); color:#2b2200;
-    border-radius:50%; width:18px; height:18px; font-size:11px; display:flex; align-items:center;
-    justify-content:center; font-weight:800; }
-  .hole { display:flex; gap:4px; justify-content:center; margin-top:4px; }
+  .pot { margin-top:12px; font: 12px var(--mono); letter-spacing:.1em; color:var(--muted); }
+  .pot b { color:var(--text); font-weight:400; font-size:15px; letter-spacing:0; margin-left:6px; }
+  .seat { position:absolute; width:132px; transform:translate(-50%,-50%); text-align:left; }
+  .seat .plate { background:#000; border:1px solid var(--line2); padding:7px 10px 8px; position:relative; }
+  .seat.folded .plate { opacity:.35; }
+  .seat.active .plate { border-color:var(--red); box-shadow: 0 0 0 3px rgba(246,64,57,.18); }
+  .seat .name { font: 700 11px var(--mono); letter-spacing:.08em; text-transform:uppercase; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; padding-right:18px; }
+  .seat .pos { position:absolute; top:7px; right:8px; font: 10px var(--mono); color:var(--dim); }
+  .seat .stack { font-size:16px; letter-spacing:-.01em; margin-top:2px; }
+  .seat .bet { position:absolute; top:-24px; left:0; font: 11px var(--mono); color:var(--cyan);
+    border:1px solid rgba(40,175,213,.5); padding:1px 6px; background:#000; }
+  .seat .btn-marker { position:absolute; top:-9px; right:-9px; width:18px; height:18px; background:var(--text);
+    color:#000; font: 700 10px/18px var(--mono); text-align:center; }
+  .hole { display:flex; gap:4px; justify-content:center; margin-top:6px; }
 
-  .pc { display:inline-flex; align-items:center; justify-content:center; width:34px; height:46px;
-    background:var(--card-bg); color:var(--card-text); border-radius:6px; font-weight:800; font-size:16px;
-    box-shadow:0 1px 3px rgba(0,0,0,.4); }
+  .pc { display:inline-flex; align-items:center; justify-content:center; width:36px; height:50px;
+    background:#f3f3ef; color:#0b0b0b; border-radius:2px; font: 700 15px var(--mono); letter-spacing:-.04em; }
   .pc.red { color:var(--red); }
-  .pc.sm { width:26px; height:36px; font-size:13px; }
-  .pc.back { background:linear-gradient(135deg,#345,#123); color:transparent; }
+  .pc.sm { width:27px; height:38px; font-size:12px; }
+  .pc.xs { width:22px; height:30px; font-size:11px; }
+  .pc.back { color:transparent; background:
+      radial-gradient(circle, rgba(246,64,57,.8) .8px, transparent 1.3px) 0 0 / 5px 5px, #111; }
+  .pc.slot { background:transparent; border:1px dashed #2e2e2e; }
 
-  .side { flex:1; min-width:260px; display:flex; flex-direction:column; gap:14px; }
-  .log { height:170px; overflow-y:auto; font-size:12.5px; color:var(--muted); display:flex;
-    flex-direction:column; gap:2px; }
-  .log b { color:var(--text); }
+  .side { display:flex; flex-direction:column; }
+  .side-block { border-top:1px solid var(--line); padding:20px 0 24px; }
+  .side-block:first-child { border-top:0; padding-top:0; }
+  .log { height:190px; overflow-y:auto; font: 12.5px/1.7 var(--mono); color:var(--muted);
+    display:flex; flex-direction:column; scrollbar-width: thin; scrollbar-color: #333 transparent; }
+  .log b { color:var(--text); font-weight:400; }
+  .log .st { color:var(--dim); }
+  .my-hole { display:flex; gap:8px; }
+  .my-hole .pc { width:52px; height:72px; font-size:21px; }
 
-  .controls { display:flex; flex-direction:column; gap:10px; }
-  .controls .main-actions { display:flex; gap:8px; }
-  .controls .main-actions button { flex:1; font-size:15px; padding:12px; }
-  .raise-row { display:flex; gap:8px; align-items:center; }
-  .raise-row input { width:110px; }
+  .controls { display:flex; flex-direction:column; gap:12px; margin-top:20px; }
+  .controls .main-actions { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+  .raise-row { display:grid; grid-template-columns: 1fr 140px; gap:10px; align-items:end; }
+  .raise-row input { font-size:20px; text-align:right; }
   .quick { display:flex; gap:6px; flex-wrap:wrap; }
 
-  .summary h3 { margin:0 0 6px; font-size:14px; }
-  .net-pos { color:var(--accent); } .net-neg { color:var(--danger); }
-  .classes { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
-  .pill { background:var(--panel2); border:1px solid var(--border); border-radius:14px; padding:4px 10px;
-    font-size:12px; }
+  .result-net { font-weight:300; font-size:54px; line-height:1; letter-spacing:-.03em; margin:4px 0 14px; }
+  .result-net small { font: 13px var(--mono); color:var(--muted); letter-spacing:0; margin-left:8px; }
+  .shown { font: 13px/1.8 var(--mono); color:var(--muted); }
+  .shown b { color:var(--text); font-weight:400; }
+  .classes { display:flex; gap:6px; margin:14px 0 20px; flex-wrap:wrap; }
+  .pill { font: 11.5px var(--mono); border:1px solid var(--line2); padding:3px 8px; color:var(--muted); }
+  .pill b { color:var(--text); font-weight:400; }
+  #next-hand-btn { width:100%; }
 
-  .history-head { display:flex; justify-content:space-between; align-items:baseline; }
-  .history-head .total { font-size:13px; font-weight:700; }
-  .history { display:flex; flex-direction:column; gap:6px; max-height:360px; overflow-y:auto; }
-  .history .empty { color:var(--muted); font-size:13px; }
-  .history details { background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:6px 10px; }
-  .history summary { cursor:pointer; display:flex; align-items:center; gap:10px; font-size:13px; list-style:none; }
+  /* ---------- history ---------- */
+  .history { display:flex; flex-direction:column; max-height:460px; overflow-y:auto; border-top:1px solid var(--line);
+    scrollbar-width: thin; scrollbar-color: #333 transparent; }
+  .empty { color:var(--dim); font: 13px var(--mono); padding:18px 0; }
+  .history details { border-bottom:1px solid var(--line); }
+  .history details[open] { background:#070707; }
+  .history summary { cursor:pointer; display:flex; align-items:center; gap:16px; padding:12px 6px; list-style:none;
+    font: 13px var(--mono); }
+  .history summary:hover { background:#0b0b0b; }
   .history summary::-webkit-details-marker { display:none; }
-  .history summary .hid { color:var(--muted); width:30px; }
-  .history summary .hpos { color:var(--muted); width:42px; }
+  .history summary .hid { color:var(--dim); width:38px; }
+  .history summary .hpos { background:var(--red); color:#000; font-size:11px; padding:2px 6px; min-width:44px;
+    text-align:center; }
   .history summary .cards { display:flex; gap:3px; }
-  .history summary .net { margin-left:auto; font-weight:700; }
-  .history .detail { margin-top:8px; font-size:12.5px; color:var(--muted); display:flex; flex-direction:column; gap:2px; }
-  .history .detail b { color:var(--text); }
-  .stats-panel > summary { cursor:pointer; list-style:none; display:flex; align-items:baseline; gap:10px; }
-  .stats-panel > summary::-webkit-details-marker { display:none; }
-  .stats-panel > summary h2 { margin:0; }
-  .stats-panel > summary .total { margin-left:auto; font-size:13px; font-weight:700; }
-  .stats-panel > summary .caret { color:var(--muted); transition:transform .15s; }
-  .stats-panel[open] > summary .caret { transform:rotate(180deg); }
-  .stats-panel[open] > summary { margin-bottom:14px; }
-  .stat-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(118px, 1fr)); gap:8px; }
-  .stat { background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:8px 10px; }
-  .stat .v { font-size:18px; font-weight:700; }
-  .stat .k { font-size:11.5px; color:var(--muted); }
-  .charts { display:flex; gap:16px; flex-wrap:wrap; margin-top:14px; }
-  .chart { flex:1; min-width:280px; }
-  .chart h3 { margin:0 0 6px; font-size:12px; color:var(--muted); font-weight:600; text-transform:uppercase;
-    letter-spacing:.04em; }
-  .chart svg { width:100%; height:auto; display:block; background:var(--panel2); border:1px solid var(--border);
-    border-radius:8px; }
-  .chart text { fill:var(--muted); font-size:10px; }
-  .pc.xs { width:22px; height:30px; font-size:11.5px; border-radius:4px; }
+  .history summary .cards + .cards { margin-left:10px; }
+  .history summary .net { margin-left:auto; font-size:14px; }
+  .history .detail { padding:4px 6px 16px 60px; font: 12.5px/1.7 var(--mono); color:var(--muted);
+    display:flex; flex-direction:column; }
+  .history .detail b { color:var(--text); font-weight:400; }
 
-  footer { text-align:center; color:var(--muted); font-size:12px; padding:20px; }
-  a { color:var(--accent); }
+  /* ---------- stats ---------- */
+  .stats-panel > summary { cursor:pointer; list-style:none; display:flex; align-items:baseline; gap:16px; }
+  .stats-panel > summary::-webkit-details-marker { display:none; }
+  .stats-panel > summary .eyebrow { margin:0; }
+  .stats-panel > summary .total { margin-left:auto; font: 14px var(--mono); }
+  .stats-panel > summary .caret { font: 14px var(--mono); color:var(--muted); width:14px; text-align:center; }
+  .stats-panel > summary .caret::before { content:'+'; }
+  .stats-panel[open] > summary .caret::before { content:'–'; }
+  .stats-panel > summary:hover .caret { color:var(--red); }
+  .stats-panel[open] > summary { margin-bottom:28px; }
+  .stat-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));
+    border-top:1px solid var(--line); border-left:1px solid var(--line); }
+  .stat { border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:16px 16px 14px; }
+  .stat .v { font-weight:300; font-size:34px; line-height:1.05; letter-spacing:-.03em; }
+  .stat .k { font: 11px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-top:8px; }
+  .charts { display:grid; grid-template-columns: 1fr 1fr; gap:32px; margin-top:36px; }
+  .chart h3 { margin:0 0 12px; font: 12px var(--mono); letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted); font-weight:400; }
+  .chart svg { width:100%; height:auto; display:block; border:1px solid var(--line); }
+  .chart text { fill:var(--muted); font: 10px var(--mono); }
+
+  /* ---------- footer ---------- */
+  footer { border-top:1px solid var(--line); margin-top:40px; padding:48px var(--gutter) 36px;
+    display:grid; grid-template-columns: 1fr auto; gap:24px; align-items:end; }
+  footer .fine { font: 12px/1.8 var(--mono); color:var(--dim); }
+  footer .fine a { color:var(--muted); }
+  footer .wordmark { font-weight:300; font-size:clamp(40px, 7vw, 104px); line-height:.9; letter-spacing:-.045em;
+    display:flex; align-items:center; gap:.2em; }
+  footer .wordmark .brand-mark { width:.62em; height:.62em; border-width:2px; }
+
+  @media (max-width: 1100px) {
+    .table-wrap { grid-template-columns: 1fr; }
+    .felt-outer { margin: 0 auto; }
+    .hero { grid-template-columns: 1fr; min-height: 0; }
+    .hero-art { display:none; }
+    .fields { grid-template-columns: 1fr 1fr; }
+    .charts { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>Poker Trainer</h1>
-  <span id="header-sub">Play hands against pokerbot's bots</span>
-</header>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <path id="spade-path" fill="currentColor"
+    d="M50 4C50 4 9 38 9 61c0 16 15 25 28 20 5-2 9-6 11-10-1 10-6 20-15 25h34c-9-5-14-15-15-25 2 4 6 8 11 10 13 5 28-4 28-20C91 38 50 4 50 4Z"/>
+</svg>
+<nav class="nav">
+  <a class="brand" href="/"><span class="brand-mark"><svg viewBox="0 0 100 100"><use href="#spade-path"/></svg></span>Poker Trainer</a>
+  <div class="nav-links table-only">
+    <a class="nav-link" href="#table">Table</a>
+    <a class="nav-link" href="#stats-block">Stats</a>
+    <a class="nav-link" href="#history-block">History</a>
+  </div>
+  <div class="nav-right">
+    <a class="nav-link" href="https://github.com/YosiefAbraham/pokerbot" target="_blank" rel="noopener">The bots ↗</a>
+    <button class="primary table-only" id="leave-btn">Leave table</button>
+  </div>
+</nav>
 <main>
 
 <section id="setup-screen">
-  <div class="card-panel">
-    <h2>Table</h2>
-    <div class="row">
-      <div><label>Seats (2-8)</label><input id="seat-count" type="number" min="2" max="8" value="6"></div>
-      <div><label>Starting stack</label><input id="stack" type="number" min="100" step="100" value="10000"></div>
-      <div><label>Small blind</label><input id="sb" type="number" min="1" value="50"></div>
-      <div><label>Big blind</label><input id="bb" type="number" min="2" value="100"></div>
+  <div class="hero">
+    <div>
+      <p class="eyebrow">No-limit hold'em · 2–8 seats</p>
+      <h1 class="display">Sit down<br>with the <em>bots</em>.</h1>
+      <p class="lede">Pick who's at the table, then play every hand yourself against pokerbot's
+        players, from a solver-style GTO bot to a maniac who can't stop raising.</p>
     </div>
-    <div class="row">
-      <div><label><input id="carry" type="checkbox" style="width:auto" checked> carry stacks between hands (100% rebuy)</label></div>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 100 100">
+        <defs>
+          <pattern id="dots" width="2.6" height="2.6" patternUnits="userSpaceOnUse">
+            <circle cx="1.3" cy="1.3" r=".62" fill="#fff"/>
+          </pattern>
+          <linearGradient id="spade-tone" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#f64039"/>
+            <stop offset=".55" stop-color="#7a3a52"/>
+            <stop offset="1" stop-color="#28afd5"/>
+          </linearGradient>
+          <mask id="dot-mask"><rect width="100" height="100" fill="url(#dots)"/></mask>
+          <clipPath id="spade"><use href="#spade-path"/></clipPath>
+        </defs>
+        <rect width="100" height="100" fill="url(#spade-tone)" mask="url(#dot-mask)" clip-path="url(#spade)"/>
+      </svg>
     </div>
   </div>
 
-  <div class="card-panel">
-    <h2>Who's sitting</h2>
+  <div class="block">
+    <p class="eyebrow"><span class="n">01</span>The table</p>
+    <div class="fields">
+      <div><label for="seat-count">Seats</label><input id="seat-count" type="number" min="2" max="8" value="6"></div>
+      <div><label for="stack">Starting stack</label><input id="stack" type="number" min="100" step="100" value="10000"></div>
+      <div><label for="sb">Small blind</label><input id="sb" type="number" min="1" value="50"></div>
+      <div><label for="bb">Big blind</label><input id="bb" type="number" min="2" value="100"></div>
+    </div>
+    <label class="check"><input id="carry" type="checkbox" checked>Carry stacks between hands, rebuy when someone busts</label>
+  </div>
+
+  <div class="block">
+    <p class="eyebrow"><span class="n">02</span>Who's sitting</p>
     <div id="seat-rows"></div>
-    <div class="err" id="setup-err"></div>
-    <button id="start-btn">Start table</button>
+    <div class="start-row">
+      <button class="fill-red" id="start-btn">Deal me in →</button>
+      <div class="err" id="setup-err"></div>
+    </div>
   </div>
 </section>
 
 <section id="table-screen">
-  <div class="table-wrap">
+  <div class="table-wrap" id="table">
     <div class="felt-outer">
       <div class="felt"></div>
+      <div class="felt-glow"></div>
       <div class="center">
         <div class="board" id="board"></div>
         <div class="pot" id="pot"></div>
@@ -168,31 +309,38 @@
       <div id="seats"></div>
     </div>
     <div class="side">
-      <div class="card-panel" style="margin-bottom:0;">
-        <h2>Action log</h2>
+      <div class="side-block">
+        <p class="eyebrow">Action</p>
         <div class="log" id="log"></div>
       </div>
-      <div class="card-panel" id="action-panel" style="margin-bottom:0;">
-        <h2>Your hand</h2>
-        <div class="hole" id="my-hole"></div>
-        <div class="controls" id="controls" style="margin-top:12px;"></div>
+      <div class="side-block" id="action-panel">
+        <p class="eyebrow">Your hand</p>
+        <div class="my-hole" id="my-hole"></div>
+        <div class="controls" id="controls"></div>
       </div>
-      <div class="card-panel" id="summary-panel" style="display:none; margin-bottom:0;"></div>
+      <div class="side-block" id="summary-panel" style="display:none;"></div>
     </div>
   </div>
-  <details class="card-panel stats-panel" style="margin-top:16px;">
-    <summary><h2>Session stats</h2><span class="total" id="stats-total"></span><span class="caret">▾</span></summary>
+  <details class="block stats-panel" id="stats-block">
+    <summary><p class="eyebrow"><span class="n">01</span>Session stats</p><span class="total" id="stats-total"></span><span class="caret"></span></summary>
     <div id="stats"></div>
   </details>
-  <div class="card-panel">
-    <div class="history-head"><h2>Hand history</h2><span class="total" id="history-total"></span></div>
+  <div class="block" id="history-block">
+    <div class="block-head"><p class="eyebrow"><span class="n">02</span>Hand history</p><span class="total" id="history-total"></span></div>
     <div class="history" id="history"></div>
   </div>
-  <div style="margin-top:14px;"><button class="secondary" id="leave-btn">Leave table</button></div>
 </section>
 
 </main>
-<footer>Local practice tool. Bots and game logic come from the pokerbot project; nothing here is a commercial solver.</footer>
+<footer>
+  <div class="fine">
+    Practice table. Every bot and every rule comes from
+    <a href="https://github.com/YosiefAbraham/pokerbot" target="_blank" rel="noopener">pokerbot</a>.<br>
+    Nothing is saved: refresh the page and the session is gone.<br>
+    Keys: F fold · C check/call · R raise · N next hand
+  </div>
+  <div class="wordmark"><span class="brand-mark"><svg viewBox="0 0 100 100"><use href="#spade-path"/></svg></span>Poker Trainer</div>
+</footer>
 
 <script>
 const RANK_ORDER = '23456789TJQKA';
@@ -239,7 +387,7 @@ function renderSeatRows() {
     const row = document.createElement('div');
     row.className = 'seat-row';
     const idx = document.createElement('div');
-    idx.className = 'idx'; idx.textContent = 'Seat ' + (i + 1);
+    idx.className = 'idx'; idx.textContent = 'SEAT ' + String(i + 1).padStart(2, '0');
     const sel = document.createElement('select');
     const group = (label, kind) => {
       const bots = botList.filter(b => (b.group || 'practice') === kind);
@@ -251,10 +399,10 @@ function renderSeatRows() {
       '<option value="">(empty)</option>';
     sel.value = prev[i] !== undefined ? prev[i] : (i === 0 ? 'human' : (botList[i % botList.length] || {}).id || '');
     const desc = document.createElement('div');
-    desc.style.color = 'var(--muted)'; desc.style.fontSize = '12px';
+    desc.className = 'desc';
     function updateDesc() {
-      if (sel.value === 'human') desc.textContent = 'you play this seat';
-      else if (!sel.value) desc.textContent = 'bench';
+      if (sel.value === 'human') desc.textContent = 'You play this seat.';
+      else if (!sel.value) desc.textContent = 'Nobody sits here.';
       else desc.textContent = (botList.find(b => b.id === sel.value) || {}).description || '';
     }
     sel.addEventListener('change', updateDesc);
@@ -301,6 +449,8 @@ document.getElementById('leave-btn').addEventListener('click', () => {
   renderHistory();
   tableScreen.style.display = 'none';
   setupScreen.style.display = 'block';
+  document.body.classList.remove('at-table');
+  window.scrollTo(0, 0);
 });
 
 // ---------- table screen ----------
@@ -326,7 +476,7 @@ function logLine(e) {
   const div = document.createElement('div');
   const amt = (e.kind === 'raise') ? fmt(e.to) : fmt(e.amount);
   div.innerHTML = `<b>${e.player}</b> ${VERB[e.kind]} ${e.kind === 'fold' || e.kind === 'check' ? '' : amt}` +
-    ` <span style="opacity:.6">· ${e.street}</span>`;
+    ` <span class="st">/ ${e.street}</span>`;
   return div;
 }
 
@@ -430,7 +580,7 @@ function positionChart(rows) {
     const w = half * Math.abs(net) / maxAbs;
     svg.appendChild(svgText(L - 6, yy + 13, p, 'end'));
     const bar = svgEl('rect', { x: net >= 0 ? mid : mid - w, y: yy + 2, width: Math.max(w, 1), height: rowH - 8,
-      rx: 3, fill: net >= 0 ? 'var(--accent)' : 'var(--danger)' });
+      fill: net >= 0 ? 'var(--accent)' : 'var(--danger)' });
     const tip = svgEl('title', {});
     tip.textContent = `${p}: ${signed(net)} over ${n} hand${n === 1 ? '' : 's'}`;
     bar.appendChild(tip);
@@ -449,7 +599,7 @@ function renderStats() {
     ? `${handHistory.length} hand${handHistory.length === 1 ? '' : 's'} · ${signed(sessionNet)}` : '';
   headTotal.className = 'total ' + (sessionNet > 0 ? 'net-pos' : (sessionNet < 0 ? 'net-neg' : ''));
   if (!handHistory.length) {
-    el.innerHTML = '<div class="empty" style="color:var(--muted); font-size:13px;">Play a hand to see your stats.</div>';
+    el.innerHTML = '<div class="empty">Play a hand to see your stats.</div>';
     return;
   }
   const rows = handHistory.map(handStats);
@@ -549,8 +699,7 @@ function renderBoard(boardStr) {
   for (const c of cards) board.appendChild(cardEl(c));
   for (let i = cards.length; i < 5; i++) {
     const ph = document.createElement('span');
-    ph.className = 'pc'; ph.style.background = 'rgba(255,255,255,.08)'; ph.style.boxShadow = 'none';
-    ph.textContent = '';
+    ph.className = 'pc slot';
     board.appendChild(ph);
   }
 }
@@ -561,7 +710,7 @@ function render(data) {
   const acting = data.status === 'acting';
   const live = acting ? data.state : data.summary;
   renderBoard(live.board ? live.board.join ? live.board.join('') : live.board : '');
-  document.getElementById('pot').textContent = 'Pot: ' + fmt(live.pot);
+  document.getElementById('pot').innerHTML = `POT <b>${fmt(live.pot)}</b>`;
 
   const stacks = live.stacks || {};
   const bets = acting ? (live.bets || {}) : {};
@@ -577,7 +726,6 @@ function render(data) {
     div.style.left = x + 'px'; div.style.top = y + 'px';
     const stack = stacks[seat.name] !== undefined ? stacks[seat.name] : seat.stack;
     div.innerHTML = `<div class="plate">
-        ${seat.name === data.button_name ? '' : ''}
         <div class="name">${seatLabel(seat)}</div>
         <div class="pos">${positions[seat.name] || ''}</div>
         <div class="stack">${fmt(stack)}</div>
@@ -615,20 +763,34 @@ function render(data) {
 
 function currentActorName() { return humanName; } // controls only ever shown for the human's own turn
 
+// Keyboard shortcuts for whatever buttons are on screen right now: F, C, R, N.
+const hotkeys = {};
+function keyButton(key, label, cls, onclick) {
+  const b = document.createElement('button');
+  if (cls) b.className = cls;
+  b.innerHTML = `<span class="key">${key}</span>${label}`;
+  b.onclick = onclick;
+  hotkeys[key.toLowerCase()] = b;
+  return b;
+}
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey || !document.body.classList.contains('at-table')) return;
+  if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName) && e.key.length === 1
+      && !(document.activeElement.id === 'raise-amount' && e.key.toLowerCase() === 'r')) return;
+  const b = hotkeys[e.key.toLowerCase()];
+  if (b && b.isConnected && b.offsetParent !== null) { e.preventDefault(); b.click(); }
+});
+
 function renderControls(state) {
   const el = document.getElementById('controls');
   el.innerHTML = '';
+  for (const k of Object.keys(hotkeys)) delete hotkeys[k];
   const main = document.createElement('div');
   main.className = 'main-actions';
 
-  const foldBtn = document.createElement('button');
-  foldBtn.className = 'danger'; foldBtn.textContent = 'Fold';
-  foldBtn.onclick = () => sendAction({ kind: 'fold' });
-
-  const callBtn = document.createElement('button');
-  callBtn.className = 'secondary';
-  callBtn.textContent = state.to_call > 0 ? `Call ${fmt(state.to_call)}` : 'Check';
-  callBtn.onclick = () => sendAction({ kind: state.to_call > 0 ? 'call' : 'check' });
+  const foldBtn = keyButton('F', 'Fold', 'secondary', () => sendAction({ kind: 'fold' }));
+  const callBtn = keyButton('C', state.to_call > 0 ? `Call ${fmt(state.to_call)}` : 'Check', 'solid',
+    () => sendAction({ kind: state.to_call > 0 ? 'call' : 'check' }));
 
   main.append(foldBtn, callBtn);
   el.appendChild(main);
@@ -640,9 +802,8 @@ function renderControls(state) {
     const input = document.createElement('input');
     input.type = 'number'; input.min = state.min_raise_to; input.max = state.max_raise_to;
     input.value = state.min_raise_to; input.id = 'raise-amount';
-    const btn = document.createElement('button');
-    btn.textContent = state.to_call > 0 ? 'Raise to' : 'Bet to';
-    btn.onclick = () => sendAction({ kind: 'raise', to: parseInt(input.value) || state.min_raise_to });
+    const btn = keyButton('R', state.to_call > 0 ? 'Raise to' : 'Bet to', 'fill-red',
+      () => sendAction({ kind: 'raise', to: parseInt(input.value) || state.min_raise_to }));
     raiseRow.append(btn, input);
     el.appendChild(raiseRow);
 
@@ -672,18 +833,20 @@ function renderSummary(summary) {
   let shownHtml = '';
   for (const [name, cards] of Object.entries(summary.shown || {})) {
     if (name === humanName) continue;
-    shownHtml += `<div><b>${name}</b>: ${cards}</div>`;
+    shownHtml += `<div><b>${name}</b> shows ${cards}</div>`;
   }
   const classesHtml = (summary.classes || []).map(c =>
-    `<span class="pill">${c.street}: ${c.class}</span>`).join('');
+    `<span class="pill">${c.street} <b>${c.class}</b></span>`).join('');
   el.innerHTML = `
-    <h2>Hand result</h2>
-    <h3 class="${netClass}">${net >= 0 ? '+' : ''}${fmt(net)} chips</h3>
-    ${shownHtml ? '<div style="margin:8px 0;">' + shownHtml + '</div>' : ''}
+    <p class="eyebrow">Hand ${handHistory.length ? handHistory[handHistory.length - 1].handId : ''} result</p>
+    <div class="result-net ${netClass}">${net >= 0 ? '+' : ''}${fmt(net)}<small>chips</small></div>
+    ${shownHtml ? '<div class="shown">' + shownHtml + '</div>' : ''}
     ${classesHtml ? '<div class="classes">' + classesHtml + '</div>' : ''}
-    <button id="next-hand-btn" style="margin-top:14px; width:100%;">Next hand</button>
   `;
-  document.getElementById('next-hand-btn').onclick = nextHand;
+  for (const k of Object.keys(hotkeys)) delete hotkeys[k];
+  const next = keyButton('N', 'Next hand →', 'solid', nextHand);
+  next.id = 'next-hand-btn';
+  el.appendChild(next);
 }
 
 async function sendAction(action) {
@@ -710,6 +873,8 @@ function onTableUpdate(data, firstTime) {
   if (firstTime) {
     setupScreen.style.display = 'none';
     tableScreen.style.display = 'block';
+    document.body.classList.add('at-table');
+    window.scrollTo(0, 0);
     handHistory = [];
     renderHistory();
   }
