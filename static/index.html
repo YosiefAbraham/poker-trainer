@@ -104,6 +104,13 @@
   .history summary .net { margin-left:auto; font-weight:700; }
   .history .detail { margin-top:8px; font-size:12.5px; color:var(--muted); display:flex; flex-direction:column; gap:2px; }
   .history .detail b { color:var(--text); }
+  .stats-panel > summary { cursor:pointer; list-style:none; display:flex; align-items:baseline; gap:10px; }
+  .stats-panel > summary::-webkit-details-marker { display:none; }
+  .stats-panel > summary h2 { margin:0; }
+  .stats-panel > summary .total { margin-left:auto; font-size:13px; font-weight:700; }
+  .stats-panel > summary .caret { color:var(--muted); transition:transform .15s; }
+  .stats-panel[open] > summary .caret { transform:rotate(180deg); }
+  .stats-panel[open] > summary { margin-bottom:14px; }
   .stat-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(118px, 1fr)); gap:8px; }
   .stat { background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:8px 10px; }
   .stat .v { font-size:18px; font-weight:700; }
@@ -173,10 +180,10 @@
       <div class="card-panel" id="summary-panel" style="display:none; margin-bottom:0;"></div>
     </div>
   </div>
-  <div class="card-panel" style="margin-top:16px;">
-    <h2>Session stats</h2>
+  <details class="card-panel stats-panel" style="margin-top:16px;">
+    <summary><h2>Session stats</h2><span class="total" id="stats-total"></span><span class="caret">▾</span></summary>
     <div id="stats"></div>
-  </div>
+  </details>
   <div class="card-panel">
     <div class="history-head"><h2>Hand history</h2><span class="total" id="history-total"></span></div>
     <div class="history" id="history"></div>
@@ -431,6 +438,11 @@ function positionChart(rows) {
 function renderStats() {
   const el = document.getElementById('stats');
   el.innerHTML = '';
+  const headTotal = document.getElementById('stats-total');
+  const sessionNet = handHistory.reduce((s, h) => s + (h.summary.nets[humanName] || 0), 0);
+  headTotal.textContent = handHistory.length
+    ? `${handHistory.length} hand${handHistory.length === 1 ? '' : 's'} · ${signed(sessionNet)}` : '';
+  headTotal.className = 'total ' + (sessionNet > 0 ? 'net-pos' : (sessionNet < 0 ? 'net-neg' : ''));
   if (!handHistory.length) {
     el.innerHTML = '<div class="empty" style="color:var(--muted); font-size:13px;">Play a hand to see your stats.</div>';
     return;
