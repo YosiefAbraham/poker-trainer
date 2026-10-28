@@ -254,6 +254,27 @@
   .chart svg { width:100%; height:auto; display:block; background:#0a0b0d; border:1px solid var(--line); }
   .chart text { fill:var(--muted); font: 10px var(--mono); }
 
+  /* ---------- big blinds race ---------- */
+  .race-head { display:flex; align-items:baseline; gap:16px; margin-bottom:20px; }
+  .race-head .eyebrow { margin:0; }
+  .race-head .live { margin-left:auto; font: 11px var(--mono); letter-spacing:.14em; color:var(--red);
+    display:flex; align-items:center; gap:8px; }
+  .race-head .live::before { content:''; width:7px; height:7px; border-radius:50%; background:var(--red);
+    box-shadow:0 0 8px var(--red); animation: blink 1.6s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity:.25; } }
+  .race { display:grid; grid-template-columns: 1fr 230px; gap:16px; }
+  .race svg { width:100%; height:auto; display:block; background:#0a0b0d; border:1px solid var(--line); }
+  .race svg text { fill:var(--muted); font: 10px var(--mono); }
+  .race-legend { display:flex; flex-direction:column; gap:6px; }
+  .race-legend .row { display:grid; grid-template-columns: 18px 1fr auto; align-items:center; gap:10px;
+    background:var(--panel2); border:1px solid var(--line); padding:8px 12px; font: 12px var(--mono); }
+  .race-legend .row.me { border-color:var(--cyan); }
+  .race-legend .rank { color:var(--dim); font-size:10px; }
+  .race-legend .who { display:flex; align-items:center; gap:8px; color:var(--text); }
+  .race-legend .sw { width:14px; height:3px; flex:none; }
+  .race-empty { font: 12px var(--mono); color:var(--muted); padding:28px 0; text-align:center;
+    border:1px dashed var(--line2); }
+
   /* ---------- footer ---------- */
   footer { border-top:1px solid var(--line); margin-top:40px; padding:48px var(--gutter) 36px;
     display:grid; grid-template-columns: 1fr auto; gap:24px; align-items:end; }
@@ -272,6 +293,7 @@
     .hero-art { display:none; }
     .fields { grid-template-columns: 1fr 1fr; }
     .charts { grid-template-columns: 1fr; }
+    .race { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -375,6 +397,11 @@
       <div class="side-block panel cyan" id="summary-panel" style="display:none;"></div>
     </div>
   </div>
+  <div class="block panel" id="race-block">
+    <div class="race-head"><p class="eyebrow">Big blinds won over the run</p><span class="live">LIVE</span></div>
+    <div id="race"></div>
+  </div>
+
   <details class="block panel stats-panel" id="stats-block">
     <summary><p class="eyebrow"><span class="n">01</span>Session stats</p><span class="total" id="stats-total"></span><span class="caret"></span></summary>
     <div id="stats"></div>
@@ -633,6 +660,78 @@ function chipChart() {
   return svg;
 }
 
+const RACE_COLORS = ['#ff4a42', '#f5b942', '#b48cff', '#5ee08a', '#ff8fb1', '#ff9a3c', '#e8e8e8'];
+
+// Running big blinds won for every seated player, one line each.
+function renderRace() {
+  const el = document.getElementById('race');
+  el.innerHTML = '';
+  const names = seatOrder.map(s => s.name);
+  if (!handHistory.length || !names.length) {
+    el.innerHTML = '<div class="race-empty">Every player gets a line here once the first hand finishes.</div>';
+    return;
+  }
+  let botColor = 0;
+  const series = names.map(name => {
+    const pts = [0];
+    for (const h of handHistory) pts.push(pts[pts.length - 1] + (h.summary.nets[name] || 0) / (h.bigBlind || 1));
+    const me = name === humanName;
+    const color = me ? 'var(--cyan)' : RACE_COLORS[botColor++ % RACE_COLORS.length];
+    return { name, pts, color, me };
+  });
+
+  const W = 880, H = 300, L = 56, R = 12, T = 14, B = 24;
+  const n = handHistory.length;
+  const all = series.flatMap(s => s.pts);
+  const lo = Math.min(0, ...all), hi = Math.max(0, ...all);
+  const span = hi - lo || 1;
+  const x = i => L + (W - L - R) * (i / n);
+  const y = v => T + (H - T - B) * (1 - (v - lo) / span);
+  const bb = v => (v > 0 ? '+' : '') + (Math.abs(v) >= 100 ? Math.round(v) : v.toFixed(1)) + ' bb';
+
+  const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
+  const step = Math.pow(10, Math.floor(Math.log10(span / 2)));
+  const tick = [1, 2, 5, 10].map(m => m * step).find(t => span / t <= 6);
+  for (let k = Math.ceil(lo / tick); k * tick <= hi; k++) {
+    const v = k === 0 ? 0 : k * tick;
+    svg.appendChild(svgEl('line', { x1: L, x2: W - R, y1: y(v), y2: y(v),
+      stroke: v === 0 ? '#4a4a4a' : '#1d1f24', 'stroke-dasharray': v === 0 ? '4 3' : '' }));
+    svg.appendChild(svgText(L - 8, y(v) + 3.5, v === 0 ? '0' : bb(v).replace(' bb', ''), 'end'));
+  }
+  svg.appendChild(svgText(L, H - 7, 'start'));
+  svg.appendChild(svgText(W - R, H - 7, 'hand ' + n, 'end'));
+
+  for (const s of [...series.filter(s => !s.me), ...series.filter(s => s.me)]) {
+    const line = svgEl('polyline', {
+      points: s.pts.map((v, i) => `${x(i)},${y(v)}`).join(' '), fill: 'none', stroke: s.color,
+      'stroke-width': s.me ? 3 : 1.75, 'stroke-linejoin': 'round', opacity: s.me ? 1 : .85,
+    });
+    const tip = svgEl('title', {});
+    tip.textContent = `${s.name}: ${bb(s.pts[n])}`;
+    line.appendChild(tip);
+    svg.appendChild(line);
+    svg.appendChild(svgEl('circle', { cx: x(n), cy: y(s.pts[n]), r: s.me ? 4 : 3, fill: s.color }));
+  }
+
+  const legend = document.createElement('div');
+  legend.className = 'race-legend';
+  [...series].sort((a, b) => b.pts[n] - a.pts[n]).forEach((s, i) => {
+    const row = document.createElement('div');
+    const v = s.pts[n];
+    row.className = 'row' + (s.me ? ' me' : '');
+    row.innerHTML = `<span class="rank">${String(i + 1).padStart(2, '0')}</span>` +
+      `<span class="who"><span class="sw" style="background:${s.color}"></span>${s.name}</span>` +
+      `<span class="${v > 0 ? 'net-pos' : (v < 0 ? 'net-neg' : '')}">${bb(v)}</span>`;
+    legend.appendChild(row);
+  });
+
+  const wrap = document.createElement('div');
+  wrap.className = 'race';
+  wrap.appendChild(svg);
+  wrap.appendChild(legend);
+  el.appendChild(wrap);
+}
+
 const POSITION_ORDER = ['UTG', 'UTG1', 'MP', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
 function positionChart(rows) {
   const byPos = {};
@@ -799,6 +898,7 @@ function renderStatus(data, acting, live) {
 function render(data) {
   const seats = data.seats;
   seatOrder = seats;
+  renderRace();
   const acting = data.status === 'acting';
   const live = acting ? data.state : data.summary;
   renderBoard(live.board ? live.board.join ? live.board.join('') : live.board : '');
