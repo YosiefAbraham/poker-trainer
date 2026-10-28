@@ -6,15 +6,21 @@ archetypes like NIT, MANIAC, STATION). Pick who sits in each seat, play the hand
 the end, see the result.
 
 This is a separate project from `pokerbot/`, but it shares its code rather than
-copying it: `server.py` adds `../pokerbot` to `sys.path` and imports its modules
-(`cards`, `protocol`, `ranges`, `strategy`, `opponents`, `bot`, `gto`) directly, so
-there's one source of truth for every bot's logic. **This folder must stay next to
-`pokerbot/`** (as a sibling directory) for that import to resolve.
+copying it: `server.py` adds the pokerbot checkout to `sys.path` and imports its
+modules (`cards`, `protocol`, `ranges`, `strategy`, `opponents`, `bot`, `gto`)
+directly, so there's one source of truth for every bot's logic. A sibling
+`../pokerbot` is used when it exists. Otherwise the app uses `vendor/pokerbot`,
+a Git submodule of [YosiefAbraham/pokerbot](https://github.com/YosiefAbraham/pokerbot),
+which is how the Vercel deploy finds the bots.
 
 ## Quick start
 
-No dependencies beyond the Python standard library and a `pokerbot` checkout next
-to this folder.
+No dependencies beyond the Python standard library. Locally, keep a `pokerbot`
+checkout next to this folder, or clone with the submodule:
+
+```
+git clone --recurse-submodules https://github.com/YosiefAbraham/poker-trainer.git
+```
 
 ```
 python3 server.py              # http://localhost:8100
@@ -45,6 +51,9 @@ set blinds and starting stack, and start the table.
   chips, any hands shown at showdown, your hand's postflop class each street via
   `strategy.classify`).
 
-Analysis is end-of-hand only by design - no live per-decision grading. Sessions are
-in-memory and local; there's no auth or persistence, matching `dashboard.py`'s
-philosophy of a local, personal tool.
+Analysis is end-of-hand only by design - no live per-decision grading. Nothing
+about a table is stored on the server: the session id is a token with the seat
+list, the deal seed, and the actions so far, and each request replays the hand.
+That's what lets the same table keep going on Vercel, where one request may land
+on a fresh process. There's no auth. The hosted app is a Vercel Python function
+(`server.py`'s `app`).

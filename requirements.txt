@@ -1,0 +1,2 @@
+# Runtime dependencies: none. The app uses the Python standard library and
+# imports the pokerbot project from ../pokerbot or vendor/pokerbot.
