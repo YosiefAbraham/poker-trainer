@@ -379,10 +379,10 @@
     <summary><p class="eyebrow"><span class="n">01</span>Session stats</p><span class="total" id="stats-total"></span><span class="caret"></span></summary>
     <div id="stats"></div>
   </details>
-  <div class="block panel" id="history-block">
-    <div class="block-head"><p class="eyebrow"><span class="n">02</span>Hand history</p><span class="total" id="history-total"></span></div>
+  <details class="block panel stats-panel" id="history-block">
+    <summary><p class="eyebrow"><span class="n">02</span>Hand history</p><span class="total" id="history-total"></span><span class="caret"></span></summary>
     <div class="history" id="history"></div>
-  </div>
+  </details>
 </section>
 
 </main>
@@ -866,6 +866,13 @@ function keyButton(key, label, cls, onclick) {
   hotkeys[key.toLowerCase()] = b;
   return b;
 }
+for (const link of document.querySelectorAll('.nav-link[href^="#"]')) {
+  link.addEventListener('click', () => {
+    const target = document.querySelector(link.getAttribute('href'));
+    if (target && target.tagName === 'DETAILS') target.open = true;
+  });
+}
+
 document.addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey || !document.body.classList.contains('at-table')) return;
   if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName) && e.key.length === 1
