@@ -10,8 +10,9 @@
 <style>
   :root {
     color-scheme: dark;
-    --bg: #000; --text: #fff; --muted: #9f9f9f; --dim: #575757; --line: #222; --line2: #333;
-    --red: #f64039; --cyan: #28afd5;
+    --bg: #000; --text: #fff; --muted: #c4c4c4; --dim: #8e8e8e; --line: #2c2c2c; --line2: #4a4a4a;
+    --panel: #0c0d0f; --panel2: #15161a; --panel3: #1d1f24;
+    --red: #ff4a42; --cyan: #34c3eb; --gold: #f5b942;
     --accent: var(--cyan); --danger: var(--red); --border: var(--line2);
     --sans: "Space Grotesk", "Helvetica Neue", sans-serif;
     --mono: "Space Mono", ui-monospace, Menlo, monospace;
@@ -67,27 +68,35 @@
   button.solid:hover { background:var(--red); border-color:var(--red); }
   button.fill-red { background:var(--red); border-color:var(--red); color:#000; }
   button.fill-red:hover { background:var(--text); border-color:var(--text); }
-  button.secondary { border-color:var(--line2); color:var(--muted); }
+  button.secondary { border-color:#777; color:#e6e6e6; }
   button.secondary:hover { border-color:var(--text); color:#000; }
-  button.ghost { border-color:var(--line2); color:var(--muted); padding:.6em .9em; font-size:12.5px; }
-  button.ghost:hover { border-color:var(--text); }
+  button.ghost { border-color:var(--line2); color:var(--muted); padding:.6em .9em; font-size:12.5px; background:var(--panel2); }
+  button.ghost:hover { border-color:var(--cyan); background:var(--cyan); color:#000; }
   button .key { font-style:normal; font-size:10.5px; opacity:.55; margin-right:.6em; border:1px solid currentColor;
     padding:1px 4px; }
   label { display:block; font: 12px var(--mono); letter-spacing:.08em; text-transform:uppercase;
     color:var(--muted); margin-bottom:8px; }
-  input, select { width:100%; background:transparent; color:var(--text); border:0; border-bottom:1px solid var(--line2);
-    border-radius:0; padding:8px 0; font: 18px var(--mono); outline:none; }
-  input:focus, select:focus { border-bottom-color:var(--red); }
-  select { appearance:none; cursor:pointer; padding-right:22px;
-    background: linear-gradient(45deg, transparent 50%, var(--muted) 50%) right 6px center / 6px 6px no-repeat,
-                linear-gradient(-45deg, transparent 50%, var(--muted) 50%) right 0 center / 6px 6px no-repeat; }
+  input, select { width:100%; background:var(--panel2); color:var(--text); border:1px solid var(--line2);
+    border-radius:0; padding:10px 12px; font: 17px var(--mono); outline:none; transition: border-color .12s; }
+  input:hover, select:hover { border-color:#6a6a6a; }
+  input:focus, select:focus { border-color:var(--red); box-shadow: 0 0 0 3px rgba(255,74,66,.15); }
+  select { appearance:none; cursor:pointer; padding-right:34px;
+    background: linear-gradient(45deg, transparent 50%, var(--red) 50%) right 18px center / 6px 6px no-repeat,
+                linear-gradient(-45deg, transparent 50%, var(--red) 50%) right 12px center / 6px 6px no-repeat,
+                var(--panel2); }
   select option, select optgroup { background:#0b0b0b; color:var(--text); font-family: var(--mono); }
   input[type=checkbox] { width:auto; accent-color: var(--red); margin:0 10px 0 0; }
   .check { display:flex; align-items:center; font: 14px var(--mono); color:var(--muted); text-transform:none;
     letter-spacing:0; cursor:pointer; }
 
   /* ---------- sections ---------- */
-  .block { border-top:1px solid var(--line); padding:44px 0; }
+  .panel { position:relative; background:var(--panel); border:1px solid var(--line2); padding:24px; }
+  .panel::before, .panel::after { content:''; position:absolute; width:12px; height:12px; pointer-events:none; }
+  .panel::before { top:-1px; left:-1px; border-top:2px solid var(--red); border-left:2px solid var(--red); }
+  .panel::after { bottom:-1px; right:-1px; border-bottom:2px solid var(--red); border-right:2px solid var(--red); }
+  .panel.cyan::before, .panel.cyan::after { border-color: var(--cyan); }
+  .block { padding:0; margin:0 0 20px; }
+  .block.panel { padding:28px; }
   .block-head { display:flex; justify-content:space-between; align-items:baseline; gap:16px; }
   .block-head .total { font: 14px var(--mono); }
 
@@ -95,43 +104,62 @@
   .hero { display:grid; grid-template-columns: 1.15fr .85fr; gap:40px; align-items:center;
     min-height: min(68vh, 620px); padding: 40px 0 56px; }
   .hero-art svg { width:100%; max-width:440px; height:auto; display:block; margin-left:auto; }
-  .fields { display:grid; grid-template-columns: repeat(4, 1fr); gap:32px; margin-bottom:28px; }
-  #seat-rows { display:flex; flex-direction:column; margin-bottom:32px; border-top:1px solid var(--line); }
-  .seat-row { display:grid; grid-template-columns: 90px minmax(180px, 320px) 1fr; gap:24px; align-items:center;
-    padding:12px 0; border-bottom:1px solid var(--line); }
-  .seat-row .idx { font: 13px var(--mono); color:var(--dim); letter-spacing:.08em; }
-  .seat-row select { border-bottom-color:transparent; font-size:16px; }
-  .seat-row select:hover, .seat-row select:focus { border-bottom-color:var(--line2); }
-  .seat-row .desc { color:var(--muted); font-size:14px; }
+  .fields { display:grid; grid-template-columns: repeat(4, 1fr); gap:20px; margin-bottom:22px; }
+  #seat-rows { display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:28px; }
+  .seat-row { display:grid; grid-template-columns: 74px 1fr; grid-template-rows: auto auto; column-gap:14px;
+    row-gap:6px; align-items:center; padding:12px 14px; background:var(--panel2); border:1px solid var(--line);
+    border-left:3px solid var(--line2); transition: border-color .12s; }
+  .seat-row:hover { border-color:var(--line2); }
+  .seat-row.me { border-left-color: var(--cyan); }
+  .seat-row.bot { border-left-color: var(--red); }
+  .seat-row .idx { font: 12px var(--mono); color:var(--dim); letter-spacing:.08em; grid-row: span 2; }
+  .seat-row.me .idx { color:var(--cyan); }
+  .seat-row.bot .idx { color:var(--red); }
+  .seat-row select { font-size:15px; padding:7px 34px 7px 10px; background-color:var(--panel3); }
+  .seat-row .desc { color:var(--muted); font-size:13.5px; line-height:1.35; }
   .start-row { display:flex; align-items:center; gap:24px; }
   .err { color:var(--red); font: 13px var(--mono); }
 
   /* ---------- table ---------- */
   #table-screen { display:none; }
-  .table-wrap { display:grid; grid-template-columns: 640px 1fr; gap:48px; padding:40px 0 48px; align-items:start; }
+  .status { display:grid; grid-template-columns: repeat(5, 1fr); margin:28px 0 16px; padding:0; }
+  .status > div { padding:14px 18px; border-left:1px solid var(--line); }
+  .status > div:first-child { border-left:0; }
+  .status .k { font: 11px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--dim); }
+  .status .v { font-size:22px; letter-spacing:-.02em; margin-top:2px; }
+  .table-wrap { display:grid; grid-template-columns: 688px 1fr; gap:16px; padding:0 0 20px; align-items:stretch; }
+  .stage { padding:16px 24px; display:grid; place-items:center; }
   .felt-outer { position:relative; width:640px; height:420px; }
-  .felt { position:absolute; inset:18px 8px; border-radius:50%; border:1px solid var(--line2);
+  .felt { position:absolute; inset:18px 8px; border-radius:50%; border:1.5px solid #5a5a5a;
     background:
-      radial-gradient(circle, rgba(246,64,57,.55) 1px, transparent 1.6px) 0 0 / 9px 9px;
-    -webkit-mask-image: radial-gradient(ellipse at center, transparent 42%, #000 92%);
-            mask-image: radial-gradient(ellipse at center, transparent 42%, #000 92%); }
-  .felt::after { content:''; position:absolute; inset:34px 46px; border-radius:50%; border:1px dashed #2a2a2a; }
+      radial-gradient(circle, rgba(255,74,66,.9) 1.15px, transparent 1.75px) 0 0 / 9px 9px;
+    -webkit-mask-image: radial-gradient(ellipse at center, transparent 40%, #000 90%);
+            mask-image: radial-gradient(ellipse at center, transparent 40%, #000 90%); }
+  .felt::after { content:''; position:absolute; inset:34px 46px; border-radius:50%; border:1px dashed #4a4a4a; }
   .felt-glow { position:absolute; inset:18px 8px; border-radius:50%; pointer-events:none;
-    background: radial-gradient(ellipse at 50% 46%, rgba(40,175,213,.10), transparent 60%); }
+    background: radial-gradient(ellipse at 50% 46%, rgba(52,195,235,.2), rgba(52,195,235,.04) 55%, transparent 70%); }
   .center { position:absolute; left:50%; top:44%; transform:translate(-50%,-50%); text-align:center; }
   .board { display:flex; gap:6px; justify-content:center; min-height:58px; }
-  .pot { margin-top:12px; font: 12px var(--mono); letter-spacing:.1em; color:var(--muted); }
-  .pot b { color:var(--text); font-weight:400; font-size:15px; letter-spacing:0; margin-left:6px; }
-  .seat { position:absolute; width:132px; transform:translate(-50%,-50%); text-align:left; }
-  .seat .plate { background:#000; border:1px solid var(--line2); padding:7px 10px 8px; position:relative; }
-  .seat.folded .plate { opacity:.35; }
-  .seat.active .plate { border-color:var(--red); box-shadow: 0 0 0 3px rgba(246,64,57,.18); }
+  .pot { display:inline-block; margin-top:12px; font: 11px var(--mono); letter-spacing:.12em; color:var(--gold);
+    border:1px solid rgba(245,185,66,.55); background:rgba(245,185,66,.08); padding:4px 10px; }
+  .pot b { color:#fff; font-weight:400; font-size:15px; letter-spacing:0; margin-left:6px; }
+  .seat { position:absolute; width:134px; transform:translate(-50%,-50%); text-align:left; }
+  .seat .plate { background:var(--panel2); border:1px solid #5a5a5a; padding:7px 10px 8px; position:relative;
+    box-shadow: 0 6px 18px rgba(0,0,0,.6); }
+  .seat.me .plate { border-color: var(--cyan); background: #0d1a1f; }
+  .seat.me .name { color: var(--cyan); }
+  .seat.folded .plate { opacity:.4; }
+  .seat.folded .name { text-decoration: line-through; }
+  .seat.active .plate { border-color:var(--red); box-shadow: 0 0 0 3px rgba(255,74,66,.25), 0 0 24px rgba(255,74,66,.25); }
+  .seat.active .plate::before { content:'TO ACT'; position:absolute; bottom:-19px; left:-1px; background:var(--red);
+    color:#000; font: 700 9.5px var(--mono); letter-spacing:.1em; padding:2px 6px; }
   .seat .name { font: 700 11px var(--mono); letter-spacing:.08em; text-transform:uppercase; white-space:nowrap;
-    overflow:hidden; text-overflow:ellipsis; padding-right:18px; }
-  .seat .pos { position:absolute; top:7px; right:8px; font: 10px var(--mono); color:var(--dim); }
-  .seat .stack { font-size:16px; letter-spacing:-.01em; margin-top:2px; }
-  .seat .bet { position:absolute; top:-24px; left:0; font: 11px var(--mono); color:var(--cyan);
-    border:1px solid rgba(40,175,213,.5); padding:1px 6px; background:#000; }
+    overflow:hidden; text-overflow:ellipsis; padding-right:30px; }
+  .seat .pos { position:absolute; top:6px; right:7px; font: 9.5px var(--mono); color:var(--muted);
+    border:1px solid var(--line2); padding:0 4px; }
+  .seat .stack { font-size:17px; letter-spacing:-.01em; margin-top:2px; }
+  .seat .bet { position:absolute; top:-25px; left:0; font: 11px var(--mono); color:var(--cyan);
+    border:1px solid var(--cyan); padding:1px 7px; background:#06161b; }
   .seat .btn-marker { position:absolute; top:-9px; right:-9px; width:18px; height:18px; background:var(--text);
     color:#000; font: 700 10px/18px var(--mono); text-align:center; }
   .hole { display:flex; gap:4px; justify-content:center; margin-top:6px; }
@@ -143,15 +171,24 @@
   .pc.xs { width:22px; height:30px; font-size:11px; }
   .pc.back { color:transparent; background:
       radial-gradient(circle, rgba(246,64,57,.8) .8px, transparent 1.3px) 0 0 / 5px 5px, #111; }
-  .pc.slot { background:transparent; border:1px dashed #2e2e2e; }
+  .pc.slot { background:rgba(255,255,255,.03); border:1px dashed #555; }
 
-  .side { display:flex; flex-direction:column; }
-  .side-block { border-top:1px solid var(--line); padding:20px 0 24px; }
-  .side-block:first-child { border-top:0; padding-top:0; }
-  .log { height:190px; overflow-y:auto; font: 12.5px/1.7 var(--mono); color:var(--muted);
-    display:flex; flex-direction:column; scrollbar-width: thin; scrollbar-color: #333 transparent; }
-  .log b { color:var(--text); font-weight:400; }
+  .side { display:flex; flex-direction:column; gap:16px; }
+  .side-block { padding:20px 22px; }
+  .log { height:180px; overflow-y:auto; font: 12.5px/1.75 var(--mono); color:var(--muted);
+    display:flex; flex-direction:column; scrollbar-width: thin; scrollbar-color: #444 transparent; }
+  .log b, .detail b { color:var(--text); font-weight:700; }
   .log .st { color:var(--dim); }
+  .ll.me b { color: var(--cyan); }
+  .ll .v { color: var(--muted); }
+  .ll.k-raise .v, .ll.k-bet .v { color: var(--red); }
+  .ll.k-call .v { color: var(--cyan); }
+  .ll.k-check .v { color: #fff; }
+  .ll.k-blind .v { color: var(--gold); }
+  .ll.k-fold { opacity: .55; }
+  .sep { display:flex; align-items:center; gap:8px; margin:6px 0 2px; font: 10.5px var(--mono); letter-spacing:.14em;
+    color: var(--gold); text-transform: uppercase; }
+  .sep::after { content:''; flex:1; height:1px; background: var(--line); }
   .my-hole { display:flex; gap:8px; }
   .my-hole .pc { width:52px; height:72px; font-size:21px; }
 
@@ -166,29 +203,31 @@
   .shown { font: 13px/1.8 var(--mono); color:var(--muted); }
   .shown b { color:var(--text); font-weight:400; }
   .classes { display:flex; gap:6px; margin:14px 0 20px; flex-wrap:wrap; }
-  .pill { font: 11.5px var(--mono); border:1px solid var(--line2); padding:3px 8px; color:var(--muted); }
+  .pill { font: 11.5px var(--mono); border:1px solid rgba(52,195,235,.5); background:rgba(52,195,235,.07);
+    padding:3px 8px; color:var(--muted); }
   .pill b { color:var(--text); font-weight:400; }
   #next-hand-btn { width:100%; }
 
   /* ---------- history ---------- */
-  .history { display:flex; flex-direction:column; max-height:460px; overflow-y:auto; border-top:1px solid var(--line);
-    scrollbar-width: thin; scrollbar-color: #333 transparent; }
-  .empty { color:var(--dim); font: 13px var(--mono); padding:18px 0; }
-  .history details { border-bottom:1px solid var(--line); }
-  .history details[open] { background:#070707; }
-  .history summary { cursor:pointer; display:flex; align-items:center; gap:16px; padding:12px 6px; list-style:none;
+  .history { display:flex; flex-direction:column; gap:6px; max-height:520px; overflow-y:auto; margin-top:18px;
+    scrollbar-width: thin; scrollbar-color: #444 transparent; }
+  .empty { color:var(--dim); font: 13px var(--mono); padding:6px 0; }
+  .history details { background:var(--panel2); border:1px solid var(--line); border-left:3px solid var(--line2); }
+  .history details.won { border-left-color: var(--cyan); }
+  .history details.lost { border-left-color: var(--red); }
+  .history details[open] { border-color: var(--line2); }
+  .history summary { cursor:pointer; display:flex; align-items:center; gap:16px; padding:10px 14px; list-style:none;
     font: 13px var(--mono); }
-  .history summary:hover { background:#0b0b0b; }
+  .history summary:hover { background:var(--panel3); }
   .history summary::-webkit-details-marker { display:none; }
-  .history summary .hid { color:var(--dim); width:38px; }
+  .history summary .hid { color:var(--muted); width:38px; }
   .history summary .hpos { background:var(--red); color:#000; font-size:11px; padding:2px 6px; min-width:44px;
     text-align:center; }
   .history summary .cards { display:flex; gap:3px; }
   .history summary .cards + .cards { margin-left:10px; }
-  .history summary .net { margin-left:auto; font-size:14px; }
-  .history .detail { padding:4px 6px 16px 60px; font: 12.5px/1.7 var(--mono); color:var(--muted);
-    display:flex; flex-direction:column; }
-  .history .detail b { color:var(--text); font-weight:400; }
+  .history summary .net { margin-left:auto; font-size:15px; }
+  .history .detail { padding:6px 14px 16px 68px; font: 12.5px/1.75 var(--mono); color:var(--muted);
+    display:flex; flex-direction:column; border-top:1px solid var(--line); }
 
   /* ---------- stats ---------- */
   .stats-panel > summary { cursor:pointer; list-style:none; display:flex; align-items:baseline; gap:16px; }
@@ -200,15 +239,18 @@
   .stats-panel[open] > summary .caret::before { content:'–'; }
   .stats-panel > summary:hover .caret { color:var(--red); }
   .stats-panel[open] > summary { margin-bottom:28px; }
-  .stat-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));
-    border-top:1px solid var(--line); border-left:1px solid var(--line); }
-  .stat { border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:16px 16px 14px; }
-  .stat .v { font-weight:300; font-size:34px; line-height:1.05; letter-spacing:-.03em; }
+  .stat-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:8px; }
+  .stat { background:var(--panel2); border:1px solid var(--line); border-top:2px solid var(--line2);
+    padding:14px 16px 12px; }
+  .stat:has(.net-pos) { border-top-color: var(--cyan); }
+  .stat:has(.net-neg) { border-top-color: var(--red); }
+  .stat .v { font-weight:400; font-size:32px; line-height:1.05; letter-spacing:-.03em; }
   .stat .k { font: 11px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-top:8px; }
-  .charts { display:grid; grid-template-columns: 1fr 1fr; gap:32px; margin-top:36px; }
+  .charts { display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:16px; }
+  .chart { background:var(--panel2); border:1px solid var(--line); padding:16px; }
   .chart h3 { margin:0 0 12px; font: 12px var(--mono); letter-spacing:.1em; text-transform:uppercase;
-    color:var(--muted); font-weight:400; }
-  .chart svg { width:100%; height:auto; display:block; border:1px solid var(--line); }
+    color:var(--gold); font-weight:400; }
+  .chart svg { width:100%; height:auto; display:block; background:#0a0b0d; border:1px solid var(--line); }
   .chart text { fill:var(--muted); font: 10px var(--mono); }
 
   /* ---------- footer ---------- */
@@ -222,6 +264,8 @@
 
   @media (max-width: 1100px) {
     .table-wrap { grid-template-columns: 1fr; }
+    .status { grid-template-columns: repeat(3, 1fr); }
+    #seat-rows { grid-template-columns: 1fr; }
     .felt-outer { margin: 0 auto; }
     .hero { grid-template-columns: 1fr; min-height: 0; }
     .hero-art { display:none; }
@@ -276,7 +320,7 @@
     </div>
   </div>
 
-  <div class="block">
+  <div class="block panel">
     <p class="eyebrow"><span class="n">01</span>The table</p>
     <div class="fields">
       <div><label for="seat-count">Seats</label><input id="seat-count" type="number" min="2" max="8" value="6"></div>
@@ -287,7 +331,7 @@
     <label class="check"><input id="carry" type="checkbox" checked>Carry stacks between hands, rebuy when someone busts</label>
   </div>
 
-  <div class="block">
+  <div class="block panel">
     <p class="eyebrow"><span class="n">02</span>Who's sitting</p>
     <div id="seat-rows"></div>
     <div class="start-row">
@@ -298,7 +342,15 @@
 </section>
 
 <section id="table-screen">
-  <div class="table-wrap" id="table">
+  <div class="status panel cyan" id="table">
+    <div><div class="k">Hand</div><div class="v" id="st-hand">–</div></div>
+    <div><div class="k">Street</div><div class="v" id="st-street">–</div></div>
+    <div><div class="k">Blinds</div><div class="v" id="st-blinds">–</div></div>
+    <div><div class="k">Your stack</div><div class="v" id="st-stack">–</div></div>
+    <div><div class="k">Session</div><div class="v" id="st-session">0</div></div>
+  </div>
+  <div class="table-wrap">
+    <div class="stage panel">
     <div class="felt-outer">
       <div class="felt"></div>
       <div class="felt-glow"></div>
@@ -308,24 +360,25 @@
       </div>
       <div id="seats"></div>
     </div>
+    </div>
     <div class="side">
-      <div class="side-block">
+      <div class="side-block panel">
         <p class="eyebrow">Action</p>
         <div class="log" id="log"></div>
       </div>
-      <div class="side-block" id="action-panel">
+      <div class="side-block panel cyan" id="action-panel">
         <p class="eyebrow">Your hand</p>
         <div class="my-hole" id="my-hole"></div>
         <div class="controls" id="controls"></div>
       </div>
-      <div class="side-block" id="summary-panel" style="display:none;"></div>
+      <div class="side-block panel cyan" id="summary-panel" style="display:none;"></div>
     </div>
   </div>
-  <details class="block stats-panel" id="stats-block">
+  <details class="block panel stats-panel" id="stats-block">
     <summary><p class="eyebrow"><span class="n">01</span>Session stats</p><span class="total" id="stats-total"></span><span class="caret"></span></summary>
     <div id="stats"></div>
   </details>
-  <div class="block" id="history-block">
+  <div class="block panel" id="history-block">
     <div class="block-head"><p class="eyebrow"><span class="n">02</span>Hand history</p><span class="total" id="history-total"></span></div>
     <div class="history" id="history"></div>
   </div>
@@ -401,6 +454,7 @@ function renderSeatRows() {
     const desc = document.createElement('div');
     desc.className = 'desc';
     function updateDesc() {
+      row.className = 'seat-row' + (sel.value === 'human' ? ' me' : (sel.value ? ' bot' : ''));
       if (sel.value === 'human') desc.textContent = 'You play this seat.';
       else if (!sel.value) desc.textContent = 'Nobody sits here.';
       else desc.textContent = (botList.find(b => b.id === sel.value) || {}).description || '';
@@ -474,16 +528,32 @@ function layoutSeats(seats) {
 const VERB = {blind:'posts', fold:'folds', check:'checks', call:'calls', bet:'bets', raise:'raises to'};
 function logLine(e) {
   const div = document.createElement('div');
+  div.className = 'll k-' + e.kind + (e.player === humanName ? ' me' : '');
   const amt = (e.kind === 'raise') ? fmt(e.to) : fmt(e.amount);
-  div.innerHTML = `<b>${e.player}</b> ${VERB[e.kind]} ${e.kind === 'fold' || e.kind === 'check' ? '' : amt}` +
-    ` <span class="st">/ ${e.street}</span>`;
+  div.innerHTML = `<b>${e.player}</b> <span class="v">${VERB[e.kind]}` +
+    `${e.kind === 'fold' || e.kind === 'check' ? '' : ' ' + amt}</span>`;
   return div;
+}
+
+// The log, with a divider each time the street changes.
+function fillLog(el, history) {
+  let street = null;
+  for (const e of history) {
+    if (e.street !== street) {
+      street = e.street;
+      const sep = document.createElement('div');
+      sep.className = 'sep';
+      sep.textContent = street;
+      el.appendChild(sep);
+    }
+    el.appendChild(logLine(e));
+  }
 }
 
 function renderLog(history) {
   const log = document.getElementById('log');
   log.innerHTML = '';
-  for (const e of history) log.appendChild(logLine(e));
+  fillLog(log, history);
   log.scrollTop = log.scrollHeight;
 }
 
@@ -544,9 +614,12 @@ function chipChart() {
   svg.appendChild(svgText(W - R, H - 6, 'hand ' + handHistory.length, 'end'));
   const last = points[points.length - 1];
   const color = last >= 0 ? 'var(--accent)' : 'var(--danger)';
+  const line = points.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+  svg.appendChild(svgEl('polygon', {
+    points: `${x(0)},${y(0)} ${line} ${x(points.length - 1)},${y(0)}`, fill: color, opacity: .14,
+  }));
   svg.appendChild(svgEl('polyline', {
-    points: points.map((v, i) => `${x(i)},${y(v)}`).join(' '),
-    fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round',
+    points: line, fill: 'none', stroke: color, 'stroke-width': 2.5, 'stroke-linejoin': 'round',
   }));
   points.forEach((v, i) => {
     if (i === 0) return;
@@ -569,7 +642,7 @@ function positionChart(rows) {
   }
   const rank = p => POSITION_ORDER.includes(p) ? POSITION_ORDER.indexOf(p) : POSITION_ORDER.length;
   const order = Object.keys(byPos).sort((a, b) => rank(a) - rank(b));
-  const W = 420, rowH = 22, H = order.length * rowH + 10, L = 46, R = 70;
+  const W = 420, rowH = 22, H = order.length * rowH + 10, L = 46, R = 96;
   const maxAbs = Math.max(1, ...order.map(p => Math.abs(byPos[p].net)));
   const mid = L + (W - L - R) / 2, half = (W - L - R) / 2;
   const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
@@ -661,6 +734,7 @@ function renderHistory() {
   for (const { handId, summary } of [...handHistory].reverse()) {
     const net = summary.nets[humanName] || 0;
     const details = document.createElement('details');
+    details.className = net > 0 ? 'won' : (net < 0 ? 'lost' : '');
     const head = document.createElement('summary');
     head.innerHTML = `<span class="hid">#${handId}</span>` +
       `<span class="hpos">${(summary.positions || {})[humanName] || ''}</span>`;
@@ -677,7 +751,7 @@ function renderHistory() {
 
     const body = document.createElement('div');
     body.className = 'detail';
-    for (const e of summary.history || []) body.appendChild(logLine(e));
+    fillLog(body, summary.history || []);
     for (const [name, cards] of Object.entries(summary.shown || {})) {
       if (name === humanName) continue;
       const div = document.createElement('div');
@@ -704,6 +778,23 @@ function renderBoard(boardStr) {
   }
 }
 
+function renderStatus(data, acting, live) {
+  const set = (id, text, cls) => {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = 'v' + (cls ? ' ' + cls : '');
+  };
+  const street = acting ? live.street
+    : (Object.keys(live.shown || {}).length > 1 ? 'showdown' : 'done');
+  const myStack = (live.stacks || {})[humanName] ?? (data.seats.find(s => s.name === humanName) || {}).stack;
+  const session = handHistory.reduce((s, h) => s + (h.summary.nets[humanName] || 0), 0);
+  set('st-hand', '#' + data.hand_id);
+  set('st-street', street ? street[0].toUpperCase() + street.slice(1) : '–', acting ? '' : 'net-pos');
+  set('st-blinds', `${fmt(data.small_blind)} / ${fmt(data.big_blind)}`);
+  set('st-stack', myStack === undefined ? '–' : fmt(myStack));
+  set('st-session', signed(session), session > 0 ? 'net-pos' : (session < 0 ? 'net-neg' : ''));
+}
+
 function render(data) {
   const seats = data.seats;
   seatOrder = seats;
@@ -711,6 +802,7 @@ function render(data) {
   const live = acting ? data.state : data.summary;
   renderBoard(live.board ? live.board.join ? live.board.join('') : live.board : '');
   document.getElementById('pot').innerHTML = `POT <b>${fmt(live.pot)}</b>`;
+  renderStatus(data, acting, live);
 
   const stacks = live.stacks || {};
   const bets = acting ? (live.bets || {}) : {};
@@ -721,7 +813,7 @@ function render(data) {
   seatsEl.innerHTML = '';
   for (const { seat, x, y } of layoutSeats(seats)) {
     const div = document.createElement('div');
-    div.className = 'seat' + (folded.has(seat.name) ? ' folded' : '') +
+    div.className = 'seat' + (seat.name === humanName ? ' me' : '') + (folded.has(seat.name) ? ' folded' : '') +
       (acting && live.position !== undefined && seat.name === currentActorName(data) ? ' active' : '');
     div.style.left = x + 'px'; div.style.top = y + 'px';
     const stack = stacks[seat.name] !== undefined ? stacks[seat.name] : seat.stack;
