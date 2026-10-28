@@ -55,6 +55,5 @@ Analysis is end-of-hand only by design - no live per-decision grading. Nothing
 about a table is stored on the server: the session id is a token with the seat
 list, the deal seed, and the actions so far, and each request replays the hand.
 That's what lets the same table keep going on Vercel, where one request may land
-on a fresh process. There's no auth. The hosted app is the Flask app in
-`server.py` (`app`), which is what Vercel runs. Locally, `python server.py`
-still uses the standard-library server and does not need Flask installed.
+on a fresh process. There's no auth. The hosted app is the WSGI `app` in
+`server.py`. Locally, `python server.py` is the same server.
