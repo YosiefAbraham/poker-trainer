@@ -91,6 +91,21 @@
   .pill { background:var(--panel2); border:1px solid var(--border); border-radius:14px; padding:4px 10px;
     font-size:12px; }
 
+  .history-head { display:flex; justify-content:space-between; align-items:baseline; }
+  .history-head .total { font-size:13px; font-weight:700; }
+  .history { display:flex; flex-direction:column; gap:6px; max-height:360px; overflow-y:auto; }
+  .history .empty { color:var(--muted); font-size:13px; }
+  .history details { background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:6px 10px; }
+  .history summary { cursor:pointer; display:flex; align-items:center; gap:10px; font-size:13px; list-style:none; }
+  .history summary::-webkit-details-marker { display:none; }
+  .history summary .hid { color:var(--muted); width:30px; }
+  .history summary .hpos { color:var(--muted); width:42px; }
+  .history summary .cards { display:flex; gap:3px; }
+  .history summary .net { margin-left:auto; font-weight:700; }
+  .history .detail { margin-top:8px; font-size:12.5px; color:var(--muted); display:flex; flex-direction:column; gap:2px; }
+  .history .detail b { color:var(--text); }
+  .pc.xs { width:22px; height:30px; font-size:11.5px; border-radius:4px; }
+
   footer { text-align:center; color:var(--muted); font-size:12px; padding:20px; }
   a { color:var(--accent); }
 </style>
@@ -147,6 +162,10 @@
       <div class="card-panel" id="summary-panel" style="display:none; margin-bottom:0;"></div>
     </div>
   </div>
+  <div class="card-panel" style="margin-top:16px;">
+    <div class="history-head"><h2>Hand history</h2><span class="total" id="history-total"></span></div>
+    <div class="history" id="history"></div>
+  </div>
   <div style="margin-top:14px;"><button class="secondary" id="leave-btn">Leave table</button></div>
 </section>
 
@@ -160,7 +179,7 @@ const RED_SUITS = new Set(['d','h']);
 
 function cardEl(card, size) {
   const span = document.createElement('span');
-  span.className = 'pc' + (size === 'sm' ? ' sm' : '') + (RED_SUITS.has(card[1]) ? ' red' : '');
+  span.className = 'pc' + (size ? ' ' + size : '') + (RED_SUITS.has(card[1]) ? ' red' : '');
   span.textContent = card[0] + SUITS[card[1]];
   return span;
 }
@@ -173,6 +192,7 @@ function cardBack(size) {
 function fmt(n) { return n.toLocaleString(); }
 
 let session = null, seatOrder = [], humanName = 'YOU', lastSeen = {};
+let handHistory = [];   // finished hands this game; page memory only, so a refresh clears it
 
 const setupScreen = document.getElementById('setup-screen');
 const tableScreen = document.getElementById('table-screen');
@@ -250,6 +270,8 @@ document.getElementById('start-btn').addEventListener('click', async () => {
 
 document.getElementById('leave-btn').addEventListener('click', () => {
   session = null;
+  handHistory = [];
+  renderHistory();
   tableScreen.style.display = 'none';
   setupScreen.style.display = 'block';
 });
@@ -272,18 +294,73 @@ function layoutSeats(seats) {
   });
 }
 
+const VERB = {blind:'posts', fold:'folds', check:'checks', call:'calls', bet:'bets', raise:'raises to'};
+function logLine(e) {
+  const div = document.createElement('div');
+  const amt = (e.kind === 'raise') ? fmt(e.to) : fmt(e.amount);
+  div.innerHTML = `<b>${e.player}</b> ${VERB[e.kind]} ${e.kind === 'fold' || e.kind === 'check' ? '' : amt}` +
+    ` <span style="opacity:.6">· ${e.street}</span>`;
+  return div;
+}
+
 function renderLog(history) {
   const log = document.getElementById('log');
   log.innerHTML = '';
-  const VERB = {blind:'posts', fold:'folds', check:'checks', call:'calls', bet:'bets', raise:'raises to'};
-  for (const e of history) {
-    const div = document.createElement('div');
-    const amt = (e.kind === 'raise') ? fmt(e.to) : fmt(e.amount);
-    div.innerHTML = `<b>${e.player}</b> ${VERB[e.kind]} ${e.kind === 'fold' || e.kind === 'check' ? '' : amt}` +
-      ` <span style="opacity:.6">· ${e.street}</span>`;
-    log.appendChild(div);
-  }
+  for (const e of history) log.appendChild(logLine(e));
   log.scrollTop = log.scrollHeight;
+}
+
+function recordHand(handId, summary) {
+  if (handHistory.some(h => h.handId === handId)) return;
+  handHistory.push({ handId, summary });
+  renderHistory();
+}
+
+function renderHistory() {
+  const el = document.getElementById('history');
+  el.innerHTML = '';
+  const total = handHistory.reduce((sum, h) => sum + (h.summary.nets[humanName] || 0), 0);
+  const totalEl = document.getElementById('history-total');
+  totalEl.textContent = handHistory.length
+    ? `${handHistory.length} hand${handHistory.length === 1 ? '' : 's'} · ${total >= 0 ? '+' : ''}${fmt(total)}`
+    : '';
+  totalEl.className = 'total ' + (total > 0 ? 'net-pos' : (total < 0 ? 'net-neg' : ''));
+  if (!handHistory.length) {
+    el.innerHTML = '<div class="empty">Finished hands show up here. Refreshing the page clears them.</div>';
+    return;
+  }
+  for (const { handId, summary } of [...handHistory].reverse()) {
+    const net = summary.nets[humanName] || 0;
+    const details = document.createElement('details');
+    const head = document.createElement('summary');
+    head.innerHTML = `<span class="hid">#${handId}</span>` +
+      `<span class="hpos">${(summary.positions || {})[humanName] || ''}</span>`;
+    const hole = document.createElement('span');
+    hole.className = 'cards';
+    for (const c of (summary.human_hole || '').match(/.{2}/g) || []) hole.appendChild(cardEl(c, 'xs'));
+    const board = document.createElement('span');
+    board.className = 'cards';
+    for (const c of (summary.board || '').match(/.{2}/g) || []) board.appendChild(cardEl(c, 'xs'));
+    const netEl = document.createElement('span');
+    netEl.className = 'net ' + (net > 0 ? 'net-pos' : (net < 0 ? 'net-neg' : ''));
+    netEl.textContent = (net >= 0 ? '+' : '') + fmt(net);
+    head.append(hole, board, netEl);
+
+    const body = document.createElement('div');
+    body.className = 'detail';
+    for (const e of summary.history || []) body.appendChild(logLine(e));
+    for (const [name, cards] of Object.entries(summary.shown || {})) {
+      if (name === humanName) continue;
+      const div = document.createElement('div');
+      div.innerHTML = `<b>${name}</b> shows ${cards}`;
+      body.appendChild(div);
+    }
+    const pot = document.createElement('div');
+    pot.innerHTML = `Pot <b>${fmt(summary.pot)}</b>`;
+    body.appendChild(pot);
+    details.append(head, body);
+    el.appendChild(details);
+  }
 }
 
 function renderBoard(boardStr) {
@@ -454,11 +531,15 @@ function onTableUpdate(data, firstTime) {
   if (firstTime) {
     setupScreen.style.display = 'none';
     tableScreen.style.display = 'block';
+    handHistory = [];
+    renderHistory();
   }
+  if (data.status === 'hand_end') recordHand(data.hand_id, data.summary);
   render(data);
 }
 
 initSetup();
+renderHistory();
 </script>
 </body>
 </html>
